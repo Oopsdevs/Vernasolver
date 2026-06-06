@@ -1,0 +1,10 @@
+anthropic
+openai
+chromadb
+sentence-transformers
+PyMuPDF
+click
+python-dotenv
+fastapi
+uvicorn[standard]
+python-multipart

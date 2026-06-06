@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BookBot — Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --danger: #ef4444;
+      --danger-dark: #dc2626;
+      --border: #e2e8f0;
+      --bg: #f1f5f9;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --radius: 10px;
+      --success-bg: #f0fdf4;
+      --success-text: #15803d;
+      --error-bg: #fef2f2;
+      --error-text: #b91c1c;
+    }
+
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); min-height: 100vh; }
+
+    /* ── Header ── */
+    header { background: #0f172a; height: 56px; display: flex; align-items: center; padding: 0 24px; gap: 12px; }
+    header .logo { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    header .logo span { color: var(--primary); }
+    header a { margin-left: auto; color: #94a3b8; font-size: 0.85rem; text-decoration: none; padding: 6px 14px; border: 1px solid #334155; border-radius: 6px; transition: all .15s; }
+    header a:hover { color: #fff; border-color: #475569; }
+
+    /* ── Page ── */
+    .page { max-width: 760px; margin: 0 auto; padding: 32px 20px; display: flex; flex-direction: column; gap: 28px; }
+
+    h1 { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+    h2 { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 14px; }
+
+    /* ── Card ── */
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+
+    /* ── Drop zone ── */
+    #dropzone {
+      border: 2px dashed #cbd5e1; border-radius: var(--radius); padding: 32px;
+      text-align: center; cursor: pointer; transition: all .15s; background: #f8fafc;
+    }
+    #dropzone.drag-over { border-color: var(--primary); background: #eff6ff; }
+    #dropzone .icon { font-size: 2.5rem; margin-bottom: 8px; }
+    #dropzone p { color: var(--text-muted); font-size: 0.875rem; }
+    #dropzone p strong { color: var(--primary); cursor: pointer; }
+    #dropzone p strong:hover { text-decoration: underline; }
+    #fileInput { display: none; }
+    #fileName { margin-top: 10px; font-size: 0.85rem; color: var(--text); font-weight: 500; }
+
+    /* ── Form fields ── */
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
+    .field input { border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 0.875rem; font-family: inherit; outline: none; transition: border-color .15s; }
+    .field input:focus { border-color: var(--primary); }
+
+    /* ── Submit ── */
+    #submitBtn { margin-top: 18px; width: 100%; padding: 11px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: background .15s; }
+    #submitBtn:hover:not(:disabled) { background: var(--primary-dark); }
+    #submitBtn:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    /* ── Progress / status ── */
+    #statusBox { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 0.875rem; }
+    #statusBox.running { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    #statusBox.done    { background: var(--success-bg); color: var(--success-text); border: 1px solid #bbf7d0; }
+    #statusBox.error   { background: var(--error-bg); color: var(--error-text); border: 1px solid #fecaca; }
+
+    .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; margin-right: 7px; vertical-align: -2px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Book list ── */
+    .subject-group { margin-bottom: 22px; }
+    .subject-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); margin-bottom: 8px; }
+
+    .book-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; }
+    .book-info { flex: 1; }
+    .book-title { font-size: 0.9rem; font-weight: 500; color: var(--text); }
+    .book-meta  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .book-id    { font-size: 0.7rem; color: #94a3b8; font-family: monospace; margin-top: 3px; }
+
+    .btn-delete { padding: 6px 12px; background: transparent; color: var(--danger); border: 1px solid #fecaca; border-radius: 6px; font-size: 0.8rem; cursor: pointer; transition: all .15s; flex-shrink: 0; }
+    .btn-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+    .empty-msg { text-align: center; padding: 32px; color: var(--text-muted); font-size: 0.875rem; }
+    .empty-msg a { color: var(--primary); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📚 Book<span>Bot</span> — Admin</div>
+  <a href="/">← Back to Chat</a>
+</header>
+
+<div class="page">
+  <div>
+    <h1>Book Management</h1>
+  </div>
+
+  <!-- ── Upload card ── -->
+  <div class="card">
+    <h2>Add a Book</h2>
+
+    <div id="dropzone">
+      <div class="icon">📄</div>
+      <p><strong>Click to choose a PDF</strong> or drag and drop here</p>
+      <div id="fileName"></div>
+      <input type="file" id="fileInput" accept=".pdf" />
+    </div>
+
+    <div class="fields">
+      <div class="field full">
+        <label>Subject</label>
+        <input type="text" id="subject" placeholder="e.g. Software Engineering" />
+      </div>
+      <div class="field">
+        <label>Book Title</label>
+        <input type="text" id="title" placeholder="e.g. Software Engineering" />
+      </div>
+      <div class="field">
+        <label>Author</label>
+        <input type="text" id="author" placeholder="e.g. Roger Pressman" />
+      </div>
+    </div>
+
+    <button id="submitBtn" disabled>Ingest Book</button>
+    <div id="statusBox"></div>
+  </div>
+
+  <!-- ── Book list card ── -->
+  <div class="card">
+    <h2>Ingested Books</h2>
+    <div id="bookList"><p class="empty-msg">Loading...</p></div>
+  </div>
+</div>
+
+<script>
+  const dropzone  = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const fileName  = document.getElementById('fileName');
+  const subject   = document.getElementById('subject');
+  const title     = document.getElementById('title');
+  const author    = document.getElementById('author');
+  const submitBtn = document.getElementById('submitBtn');
+  const statusBox = document.getElementById('statusBox');
+  const bookList  = document.getElementById('bookList');
+
+  let selectedFile = null;
+  let pollInterval = null;
+
+  // ── Drag & drop ───────────────────────────────────────────────────────────
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file?.type === 'application/pdf') setFile(file);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0]);
+  });
+
+  function setFile(file) {
+    selectedFile = file;
+    fileName.textContent = `Selected: ${file.name}`;
+    checkReady();
+  }
+
+  // ── Form validation ───────────────────────────────────────────────────────
+  [subject, title, author].forEach(el => el.addEventListener('input', checkReady));
+  function checkReady() {
+    submitBtn.disabled = !(selectedFile && subject.value.trim() && title.value.trim() && author.value.trim());
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+  submitBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    const fd = new FormData();
+    fd.append('file', selectedFile);
+    fd.append('subject', subject.value.trim());
+    fd.append('title', title.value.trim());
+    fd.append('author', author.value.trim());
+
+    submitBtn.disabled = true;
+    setStatus('running', 'Uploading file...');
+
+    const res = await fetch('/api/ingest', { method: 'POST', body: fd });
+    const { job_id } = await res.json();
+
+    pollInterval = setInterval(async () => {
+      const r = await fetch(`/api/ingest/${job_id}`);
+      const data = await r.json();
+      setStatus(data.status, data.message);
+
+      if (data.status === 'done' || data.status === 'error') {
+        clearInterval(pollInterval);
+        if (data.status === 'done') {
+          selectedFile = null;
+          fileInput.value = '';
+          fileName.textContent = '';
+          subject.value = '';
+          title.value = '';
+          author.value = '';
+          checkReady();
+          loadBooks();
+        }
+      }
+    }, 1500);
+  });
+
+  function setStatus(status, message) {
+    statusBox.style.display = 'block';
+    statusBox.className = status;
+    const spinner = status === 'running' ? '<span class="spinner"></span>' : '';
+    const icon = status === 'done' ? '✅ ' : status === 'error' ? '❌ ' : '';
+    statusBox.innerHTML = `${spinner}${icon}${escapeHtml(message)}`;
+  }
+
+  // ── Book list ─────────────────────────────────────────────────────────────
+  async function loadBooks() {
+    const res = await fetch('/api/books');
+    const { books } = await res.json();
+
+    if (books.length === 0) {
+      bookList.innerHTML = '<p class="empty-msg">No books yet. Add one above.</p>';
+      return;
+    }
+
+    // Group by subject
+    const bySubject = {};
+    books.forEach(b => {
+      if (!bySubject[b.subject]) bySubject[b.subject] = [];
+      bySubject[b.subject].push(b);
+    });
+
+    bookList.innerHTML = Object.entries(bySubject).sort(([a],[b]) => a.localeCompare(b)).map(([subj, list]) => `
+      <div class="subject-group">
+        <div class="subject-label">${escapeHtml(subj)}</div>
+        ${list.map(b => `
+          <div class="book-row" id="row-${b.book_id}">
+            <div class="book-info">
+              <div class="book-title">${escapeHtml(b.title)}</div>
+              <div class="book-meta">${escapeHtml(b.author)} · ${b.pages} pages · ${b.chunks} chunks</div>
+              <div class="book-id">${escapeHtml(b.book_id)}</div>
+            </div>
+            <button class="btn-delete" onclick="deleteBook('${escapeHtml(b.book_id)}', '${escapeHtml(b.title)}')">Remove</button>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+
+  async function deleteBook(bookId, bookTitle) {
+    if (!confirm(`Remove "${bookTitle}" from the knowledge base? This cannot be undone.`)) return;
+    const res = await fetch(`/api/books/${encodeURIComponent(bookId)}`, { method: 'DELETE' });
+    if (res.ok) {
+      document.getElementById(`row-${bookId}`)?.remove();
+      // Remove empty subject groups
+      document.querySelectorAll('.subject-group').forEach(g => {
+        if (g.querySelectorAll('.book-row').length === 0) g.remove();
+      });
+      if (document.querySelectorAll('.book-row').length === 0) {
+        bookList.innerHTML = '<p class="empty-msg">No books yet. Add one above.</p>';
+      }
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  loadBooks();
+</script>
+</body>
+</html>
