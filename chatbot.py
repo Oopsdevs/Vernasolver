@@ -17,7 +17,7 @@ DIVIDER = "─" * 62
 
 @click.group()
 def cli():
-    """BookBot — Ask questions from your textbooks, grounded in the source."""
+    """VernaSolver — Ask questions from your textbooks, grounded in the source."""
     pass
 
 

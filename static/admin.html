@@ -3,102 +3,205 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BookBot — Admin</title>
+  <title>VernaSolver — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --primary: #3b82f6;
-      --primary-dark: #2563eb;
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --purple: #8b5cf6;
+      --pink: #ec4899;
+      --amber: #f59e0b;
+      --green: #10b981;
       --danger: #ef4444;
-      --danger-dark: #dc2626;
-      --border: #e2e8f0;
-      --bg: #f1f5f9;
-      --card-bg: #ffffff;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --radius: 10px;
-      --success-bg: #f0fdf4;
-      --success-text: #15803d;
-      --error-bg: #fef2f2;
-      --error-text: #b91c1c;
+
+      --bg: #0a0a18;
+      --bg-2: #14142b;
+      --sidebar-bg: #08081a;
+      --glass: rgba(255,255,255,.04);
+      --glass-strong: rgba(255,255,255,.06);
+      --border: rgba(255,255,255,.08);
+      --border-strong: rgba(255,255,255,.14);
+
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius: 12px;
+
+      --display: "Space Grotesk", system-ui, sans-serif;
+      --body-font: "Inter", system-ui, sans-serif;
+      --arcade: "Press Start 2P", monospace;
     }
 
-    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); min-height: 100vh; }
+    body {
+      font-family: var(--body-font); color: var(--text);
+      background:
+        radial-gradient(ellipse 1200px 600px at 20% 10%, rgba(99,102,241,.10), transparent 60%),
+        radial-gradient(ellipse 900px 500px at 80% 90%, rgba(236,72,153,.08), transparent 60%),
+        linear-gradient(180deg, var(--bg), var(--bg-2));
+      background-attachment: fixed;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
 
-    /* ── Header ── */
-    header { background: #0f172a; height: 56px; display: flex; align-items: center; padding: 0 24px; gap: 12px; }
-    header .logo { font-size: 1.1rem; font-weight: 700; color: #fff; }
-    header .logo span { color: var(--primary); }
-    header a { margin-left: auto; color: #94a3b8; font-size: 0.85rem; text-decoration: none; padding: 6px 14px; border: 1px solid #334155; border-radius: 6px; transition: all .15s; }
-    header a:hover { color: #fff; border-color: #475569; }
+    /* ── Header ──────────────────────────────────────────────────────────── */
+    header {
+      height: 58px; background: rgba(8, 8, 26, .72); backdrop-filter: blur(18px);
+      display: flex; align-items: center; padding: 0 24px; gap: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-family: var(--arcade); font-size: 0.78rem; letter-spacing: 1.5px;
+      background: linear-gradient(135deg, #fff, var(--primary) 70%, var(--pink));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .logo span { color: var(--pink); -webkit-background-clip: initial; background-clip: initial; }
+    header > a {
+      margin-left: auto;
+      color: var(--text-muted); font-size: 0.82rem; text-decoration: none;
+      padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px;
+      transition: all .15s; font-weight: 500; background: rgba(255,255,255,.02);
+    }
+    header > a:hover { color: #fff; border-color: var(--primary); background: rgba(99,102,241,.1); box-shadow: 0 4px 14px rgba(99,102,241,.25); }
 
-    /* ── Page ── */
-    .page { max-width: 760px; margin: 0 auto; padding: 32px 20px; display: flex; flex-direction: column; gap: 28px; }
+    /* ── Page ──────────────────────────────────────────────────────────── */
+    .page { max-width: 800px; margin: 0 auto; padding: 36px 22px 60px; display: flex; flex-direction: column; gap: 30px; }
 
-    h1 { font-size: 1.4rem; font-weight: 700; color: var(--text); }
-    h2 { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 14px; }
+    h1 {
+      font-family: var(--display); font-size: 1.6rem; font-weight: 700;
+      background: linear-gradient(135deg, #fff, var(--primary) 80%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      letter-spacing: -.02em;
+    }
+    h2 {
+      font-family: var(--display); font-size: 1.05rem; font-weight: 600;
+      color: #fff; margin-bottom: 16px;
+    }
 
-    /* ── Card ── */
-    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+    /* ── Card ──────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--glass-strong);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 26px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.25);
+    }
 
-    /* ── Drop zone ── */
+    /* ── Drop zone ──────────────────────────────────────────────────────── */
     #dropzone {
-      border: 2px dashed #cbd5e1; border-radius: var(--radius); padding: 32px;
-      text-align: center; cursor: pointer; transition: all .15s; background: #f8fafc;
+      border: 2px dashed var(--border-strong); border-radius: var(--radius); padding: 36px;
+      text-align: center; cursor: pointer; transition: all .2s;
+      background: rgba(255,255,255,.02);
     }
-    #dropzone.drag-over { border-color: var(--primary); background: #eff6ff; }
-    #dropzone .icon { font-size: 2.5rem; margin-bottom: 8px; }
+    #dropzone.drag-over {
+      border-color: var(--primary);
+      background: rgba(99,102,241,.08);
+      box-shadow: 0 0 0 4px rgba(99,102,241,.12), inset 0 0 40px rgba(99,102,241,.08);
+    }
+    #dropzone .icon { font-size: 2.8rem; margin-bottom: 10px; filter: drop-shadow(0 4px 14px rgba(99,102,241,.4)); }
     #dropzone p { color: var(--text-muted); font-size: 0.875rem; }
-    #dropzone p strong { color: var(--primary); cursor: pointer; }
-    #dropzone p strong:hover { text-decoration: underline; }
+    #dropzone p strong {
+      background: linear-gradient(135deg, var(--primary), var(--pink));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      cursor: pointer; font-weight: 700;
+    }
     #fileInput { display: none; }
-    #fileName { margin-top: 10px; font-size: 0.85rem; color: var(--text); font-weight: 500; }
+    #fileName { margin-top: 12px; font-size: 0.85rem; color: #fff; font-weight: 500; }
 
-    /* ── Form fields ── */
-    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
-    .field { display: flex; flex-direction: column; gap: 5px; }
+    /* ── Form fields ──────────────────────────────────────────────────── */
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
     .field.full { grid-column: 1 / -1; }
-    .field label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
-    .field input { border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 0.875rem; font-family: inherit; outline: none; transition: border-color .15s; }
-    .field input:focus { border-color: var(--primary); }
+    .field label {
+      font-family: var(--arcade); font-size: 0.55rem; letter-spacing: .12em;
+      color: var(--text-dim); text-transform: uppercase;
+    }
+    .field input {
+      background: var(--glass); color: var(--text);
+      border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 10px 14px; font-size: 0.9rem; font-family: var(--body-font);
+      outline: none; transition: all .2s;
+    }
+    .field input::placeholder { color: var(--text-dim); }
+    .field input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.2); background: rgba(99,102,241,.06); }
 
-    /* ── Submit ── */
-    #submitBtn { margin-top: 18px; width: 100%; padding: 11px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: background .15s; }
-    #submitBtn:hover:not(:disabled) { background: var(--primary-dark); }
-    #submitBtn:disabled { background: #93c5fd; cursor: not-allowed; }
+    /* ── Submit ────────────────────────────────────────────────────────── */
+    #submitBtn {
+      margin-top: 22px; width: 100%; padding: 13px;
+      background: linear-gradient(135deg, var(--primary), var(--purple), var(--pink));
+      color: #fff; border: none; border-radius: 12px;
+      font-family: var(--body-font); font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+      box-shadow: 0 6px 20px rgba(99,102,241,.4);
+    }
+    #submitBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(236,72,153,.5); }
+    #submitBtn:disabled {
+      background: linear-gradient(135deg, rgba(99,102,241,.35), rgba(236,72,153,.25));
+      opacity: .5; cursor: not-allowed; box-shadow: none;
+    }
 
-    /* ── Progress / status ── */
-    #statusBox { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 0.875rem; }
-    #statusBox.running { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-    #statusBox.done    { background: var(--success-bg); color: var(--success-text); border: 1px solid #bbf7d0; }
-    #statusBox.error   { background: var(--error-bg); color: var(--error-text); border: 1px solid #fecaca; }
+    /* ── Progress / status ─────────────────────────────────────────────── */
+    #statusBox {
+      display: none; margin-top: 16px; padding: 13px 16px;
+      border-radius: 10px; font-size: 0.875rem;
+      backdrop-filter: blur(8px);
+    }
+    #statusBox.running { background: rgba(99,102,241,.10); color: #c7d2fe; border: 1px solid rgba(99,102,241,.35); }
+    #statusBox.done    { background: rgba(16,185,129,.10); color: #6ee7b7; border: 1px solid rgba(16,185,129,.35); }
+    #statusBox.error   { background: rgba(239,68,68,.10); color: #fca5a5; border: 1px solid rgba(239,68,68,.35); }
 
-    .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; margin-right: 7px; vertical-align: -2px; }
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid currentColor; border-top-color: transparent;
+      border-radius: 50%; animation: spin .7s linear infinite;
+      margin-right: 8px; vertical-align: -2px;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Book list ── */
+    /* ── Book list ───────────────────────────────────────────────────── */
     .subject-group { margin-bottom: 22px; }
-    .subject-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); margin-bottom: 8px; }
+    .subject-label {
+      font-family: var(--arcade); font-size: 0.55rem; letter-spacing: .15em;
+      color: var(--amber); margin-bottom: 10px; text-transform: uppercase;
+    }
+    .book-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; background: var(--glass); border: 1px solid var(--border);
+      border-radius: 11px; margin-bottom: 8px; transition: all .2s;
+    }
+    .book-row:hover { border-color: rgba(99,102,241,.4); background: rgba(99,102,241,.05); }
+    .book-info { flex: 1; min-width: 0; }
+    .book-title { font-size: 0.92rem; font-weight: 600; color: #fff; }
+    .book-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; }
+    .book-id { font-size: 0.7rem; color: var(--text-dim); font-family: "SF Mono", Consolas, monospace; margin-top: 4px; }
 
-    .book-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; }
-    .book-info { flex: 1; }
-    .book-title { font-size: 0.9rem; font-weight: 500; color: var(--text); }
-    .book-meta  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-    .book-id    { font-size: 0.7rem; color: #94a3b8; font-family: monospace; margin-top: 3px; }
+    .btn-delete {
+      padding: 7px 14px; background: transparent; color: #fca5a5;
+      border: 1px solid rgba(239,68,68,.35); border-radius: 8px;
+      font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all .15s;
+      flex-shrink: 0;
+    }
+    .btn-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); box-shadow: 0 4px 14px rgba(239,68,68,.4); }
 
-    .btn-delete { padding: 6px 12px; background: transparent; color: var(--danger); border: 1px solid #fecaca; border-radius: 6px; font-size: 0.8rem; cursor: pointer; transition: all .15s; flex-shrink: 0; }
-    .btn-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
-
-    .empty-msg { text-align: center; padding: 32px; color: var(--text-muted); font-size: 0.875rem; }
+    .empty-msg { text-align: center; padding: 36px; color: var(--text-muted); font-size: 0.875rem; }
     .empty-msg a { color: var(--primary); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(99,102,241,.25); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,.45); }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">📚 Book<span>Bot</span> — Admin</div>
-  <a href="/">← Back to Chat</a>
+  <div class="logo">VERNA<span>SOLVER</span> — Admin</div>
+  <a href="/app">← Back to Chat</a>
 </header>
 
 <div class="page">
@@ -157,7 +260,6 @@
   let selectedFile = null;
   let pollInterval = null;
 
-  // ── Drag & drop ───────────────────────────────────────────────────────────
   dropzone.addEventListener('click', () => fileInput.click());
   dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
   dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
@@ -177,13 +279,11 @@
     checkReady();
   }
 
-  // ── Form validation ───────────────────────────────────────────────────────
   [subject, title, author].forEach(el => el.addEventListener('input', checkReady));
   function checkReady() {
     submitBtn.disabled = !(selectedFile && subject.value.trim() && title.value.trim() && author.value.trim());
   }
 
-  // ── Submit ────────────────────────────────────────────────────────────────
   submitBtn.addEventListener('click', async () => {
     if (!selectedFile) return;
 
@@ -228,7 +328,6 @@
     statusBox.innerHTML = `${spinner}${icon}${escapeHtml(message)}`;
   }
 
-  // ── Book list ─────────────────────────────────────────────────────────────
   async function loadBooks() {
     const res = await fetch('/api/books');
     const { books } = await res.json();
@@ -238,7 +337,6 @@
       return;
     }
 
-    // Group by subject
     const bySubject = {};
     books.forEach(b => {
       if (!bySubject[b.subject]) bySubject[b.subject] = [];
@@ -267,7 +365,6 @@
     const res = await fetch(`/api/books/${encodeURIComponent(bookId)}`, { method: 'DELETE' });
     if (res.ok) {
       document.getElementById(`row-${bookId}`)?.remove();
-      // Remove empty subject groups
       document.querySelectorAll('.subject-group').forEach(g => {
         if (g.querySelectorAll('.book-row').length === 0) g.remove();
       });

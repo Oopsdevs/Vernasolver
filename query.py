@@ -82,9 +82,9 @@ def search(question: str, subject: str, book_id: str | None = None) -> list[dict
 
 def format_context(chunks: list[dict]) -> str:
     parts = []
-    for i, c in enumerate(chunks, 1):
+    for c in chunks:
         parts.append(
-            f'[Excerpt {i} — "{c["title"]}" by {c["author"]}, Page {c["page"]}]\n{c["text"]}'
+            f'[From "{c["title"]}" by {c["author"]}, Page {c["page"]}]\n{c["text"]}'
         )
     return "\n\n---\n\n".join(parts)
 

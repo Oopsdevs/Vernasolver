@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>VernaSolver — Your Textbook. Your Language. Your Answers.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Press+Start+2P&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollToPlugin.min.js"></script>
+<style>
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #6366f1;
+  --accent: #ec4899;
+  --bg: #0a0a18;
+  --bg-2: #14142b;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --hud-h: 64px;
+  --arcade: "Press Start 2P", monospace;
+  --display: "Space Grotesk", system-ui, sans-serif;
+  --body-font: "Inter", system-ui, sans-serif;
+}
+
+html, body {
+  width: 100%; overflow-x: hidden;
+  font-family: var(--body-font); color: var(--text);
+  background: var(--bg); scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom cursor trail dot */
+.trail-dot {
+  position: fixed; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--primary); pointer-events: none; z-index: 9998;
+  mix-blend-mode: screen; box-shadow: 0 0 24px var(--primary);
+  transition: transform .25s cubic-bezier(.22,1,.36,1), background .4s, box-shadow .4s;
+  opacity: .8;
+}
+@media (max-width: 768px) { .trail-dot { display: none; } }
+
+/* ── HUD ──────────────────────────────────────────────────────────────────── */
+.hud {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--hud-h);
+  z-index: 9999; display: flex; align-items: center; gap: 14px;
+  padding: 0 22px;
+  background: rgba(10, 10, 24, .72); backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.hud-logo {
+  font-family: var(--arcade); font-size: 0.78rem; letter-spacing: 1px;
+  background: linear-gradient(135deg, #fff, var(--primary));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hud-level {
+  font-family: var(--arcade); font-size: 0.55rem; letter-spacing: 1.5px;
+  color: var(--muted); white-space: nowrap;
+}
+.hud-level span { color: var(--primary); }
+.hud-bar {
+  flex: 1; height: 10px; background: rgba(255,255,255,.07);
+  border-radius: 6px; overflow: hidden; position: relative;
+  border: 1px solid rgba(255,255,255,.08); max-width: 380px;
+}
+.hud-bar-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  box-shadow: 0 0 18px var(--primary);
+  transition: width .35s cubic-bezier(.22,1,.36,1);
+  position: relative;
+}
+.hud-bar-fill::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent);
+  animation: shimmer 2s linear infinite;
+}
+@keyframes shimmer { 0% { transform: translateX(-100%);} 100%{ transform: translateX(100%);} }
+.hud-actions { display: flex; gap: 8px; }
+.hud-btn {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  color: var(--text); padding: 8px 14px; border-radius: 8px; cursor: pointer;
+  font-family: var(--display); font-size: 0.8rem; font-weight: 500;
+  transition: all .15s;
+}
+.hud-btn:hover { background: rgba(255,255,255,.1); border-color: var(--primary); }
+.hud-btn.icon { padding: 8px 10px; }
+@media (max-width: 768px) {
+  .hud { padding: 0 12px; gap: 8px; }
+  .hud-level { display: none; }
+  .hud-btn { padding: 6px 10px; font-size: 0.72rem; }
+  .hud-actions .hud-btn:not(.icon):not(.cta) { display: none; }
+}
+
+/* ── Aurora orbs (drifting background gradient) ──────────────────────────── */
+.aurora-bg {
+  position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden;
+}
+.aurora-orb {
+  position: absolute; border-radius: 50%; filter: blur(110px);
+  opacity: 0.42; mix-blend-mode: screen;
+  animation: drift 30s ease-in-out infinite;
+}
+.aurora-orb.a { background: #6366f1; width: 520px; height: 520px; top: -120px; left: -120px; }
+.aurora-orb.b { background: #ec4899; width: 640px; height: 640px; bottom: -200px; right: -160px; animation-delay: -10s; }
+.aurora-orb.c { background: #f59e0b; width: 380px; height: 380px; top: 40%; left: 35%; animation-delay: -20s; opacity: .25; }
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(120px, -60px) scale(1.12); }
+  66%      { transform: translate(-90px, 80px) scale(0.92); }
+}
+
+/* ── Sparkle burst on click ──────────────────────────────────────────────── */
+.sparkle {
+  position: fixed; width: 7px; height: 7px; border-radius: 50%;
+  pointer-events: none; z-index: 9990;
+  animation: sparkleOut .75s cubic-bezier(.22,1,.36,1) forwards;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+@keyframes sparkleOut {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+}
+
+/* ── Achievement toast ───────────────────────────────────────────────────── */
+.achievement {
+  position: fixed; top: 86px; left: 50%; transform: translateX(-50%) translateY(-20px);
+  background: linear-gradient(135deg, rgba(99,102,241,.95), rgba(236,72,153,.95));
+  border: 2px solid rgba(255,255,255,.18); border-radius: 14px;
+  padding: 12px 22px; display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 16px 40px rgba(236,72,153,.45), 0 0 60px rgba(99,102,241,.4);
+  opacity: 0; transition: all .45s cubic-bezier(.22,1,.36,1);
+  z-index: 9995; backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+.achievement.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.achievement-icon { font-size: 2rem; animation: trophySpin 2s ease-in-out infinite; }
+@keyframes trophySpin {
+  0%, 100% { transform: rotate(-8deg); }
+  50%      { transform: rotate(8deg); }
+}
+.achievement-label {
+  font-family: var(--arcade); font-size: 0.5rem; letter-spacing: .18em;
+  color: rgba(255,255,255,.7); text-transform: uppercase;
+}
+.achievement-text {
+  font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: #fff;
+}
+
+/* ── Dev mode overlay (Konami easter egg) ────────────────────────────────── */
+.dev-overlay {
+  position: fixed; inset: 0; z-index: 9994;
+  background: radial-gradient(ellipse at center, rgba(20,20,43,.92), rgba(0,0,0,.95));
+  display: flex; align-items: center; justify-content: center;
+  padding: 30px; backdrop-filter: blur(8px);
+  animation: fadeInDev .4s ease-out;
+}
+@keyframes fadeInDev { from { opacity: 0; } to { opacity: 1; } }
+.dev-credits {
+  text-align: center; max-width: 540px;
+  color: #fff; font-family: var(--display);
+  animation: devGlow 2s ease-in-out infinite alternate;
+}
+@keyframes devGlow {
+  from { text-shadow: 0 0 18px rgba(99,102,241,.6); }
+  to   { text-shadow: 0 0 32px rgba(236,72,153,.8); }
+}
+.dev-credits h2 {
+  font-family: var(--arcade); font-size: 1.3rem; letter-spacing: 3px;
+  background: linear-gradient(135deg, #6366f1, #ec4899, #f59e0b);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  margin-bottom: 18px;
+}
+.dev-credits .team {
+  font-family: var(--arcade); font-size: 0.65rem; letter-spacing: 2px;
+  color: var(--primary); margin: 16px 0 6px;
+}
+.dev-credits .names {
+  font-size: 1.1rem; font-weight: 600; margin-bottom: 18px;
+}
+.dev-credits .stack {
+  font-family: var(--arcade); font-size: 0.55rem; letter-spacing: 1.5px;
+  color: #94a3b8; line-height: 2;
+}
+.dev-credits .konami-hint {
+  margin-top: 24px; font-family: var(--arcade); font-size: 0.55rem;
+  letter-spacing: 2px; color: #f59e0b;
+}
+
+/* ── Hero language chip wobble ───────────────────────────────────────────── */
+.hero-lang-chip { transition: transform .25s cubic-bezier(.22,1,.36,1); }
+.hero-lang-chip:hover {
+  transform: translateY(-3px) rotate(-3deg) scale(1.08);
+  box-shadow: 0 8px 22px rgba(99,102,241,.4);
+  background: rgba(99,102,241,.18) !important;
+  border-color: rgba(99,102,241,.5) !important;
+}
+.hero-lang-chip:nth-child(1):hover { transform: translateY(-3px) rotate(-3deg) scale(1.08); }
+.hero-lang-chip:nth-child(2):hover { transform: translateY(-5px) rotate(0)    scale(1.10); }
+.hero-lang-chip:nth-child(3):hover { transform: translateY(-3px) rotate(3deg)  scale(1.08); }
+
+/* ── Tier card 3D tilt (replaces flat magnetic) ──────────────────────────── */
+.tier-card {
+  transform-style: preserve-3d;
+  transition: transform .15s cubic-bezier(.22,1,.36,1), box-shadow .25s, border-color .25s;
+}
+.tier-card > * { transform: translateZ(20px); }
+.tier-card .tier-avatar { transform: translateZ(40px); }
+.tier-card .tier-cta { transform: translateZ(30px); }
+
+/* ── Spotlight cursor halo ───────────────────────────────────────────────── */
+.spotlight {
+  position: fixed; inset: 0; pointer-events: none; z-index: -1;
+  background: radial-gradient(550px circle at var(--mx, 50%) var(--my, 50%),
+              rgba(99,102,241,.10), transparent 40%);
+  transition: background .35s;
+}
+@media (max-width: 768px) { .spotlight, .aurora-orb { display: none; } }
+
+/* ── Floating background books ────────────────────────────────────────────── */
+.bg-particles {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  overflow: hidden;
+}
+.book-particle {
+  position: absolute; font-size: 1.4rem; opacity: 0.08;
+  animation: float 25s linear infinite;
+  filter: blur(0.5px);
+}
+@keyframes float {
+  0%   { transform: translate(0, 100vh) rotate(0deg); }
+  100% { transform: translate(20vw, -120vh) rotate(360deg); }
+}
+
+/* ── Sections ─────────────────────────────────────────────────────────────── */
+.level {
+  min-height: 100vh; width: 100%;
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(var(--hud-h) + 30px) 22px 60px;
+  position: relative; overflow: hidden;
+}
+.level-tag {
+  font-family: var(--arcade); font-size: 0.6rem; letter-spacing: 2px;
+  color: var(--primary); margin-bottom: 14px; opacity: 0;
+}
+.level-tag::before { content: '◇ '; }
+.level-title {
+  font-family: var(--display); font-size: clamp(2rem, 5vw, 3.6rem);
+  font-weight: 700; line-height: 1.1; margin-bottom: 18px;
+  letter-spacing: -0.02em; opacity: 0;
+}
+.level-sub {
+  font-size: clamp(0.95rem, 1.5vw, 1.1rem); color: var(--muted);
+  line-height: 1.6; max-width: 540px; opacity: 0; margin-bottom: 28px;
+}
+.level-content {
+  width: 100%; max-width: 1200px; position: relative; z-index: 2;
+}
+
+/* ── Level 1: Hero ────────────────────────────────────────────────────────── */
+#level-1 {
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(99,102,241,.25), transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(236,72,153,.2), transparent 50%),
+    linear-gradient(180deg, #0a0a18, #14142b);
+}
+.hero-content { text-align: center; }
+.hero-title {
+  font-family: var(--display);
+  font-size: clamp(3rem, 9vw, 7.5rem); font-weight: 900;
+  line-height: 0.95; letter-spacing: -0.04em; margin-bottom: 18px;
+  background: linear-gradient(135deg, #f1f5f9 0%, #6366f1 40%, #ec4899 70%, #f59e0b 100%);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: gradientMove 8s ease infinite;
+  text-shadow: 0 0 60px rgba(99,102,241,.5);
+}
+@keyframes gradientMove {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.hero-tagline {
+  font-size: clamp(1rem, 2vw, 1.3rem); color: var(--muted);
+  margin-bottom: 38px; max-width: 620px; margin-inline: auto; line-height: 1.55;
+}
+.hero-tagline strong {
+  color: #fff; font-weight: 600;
+  background: linear-gradient(90deg, #f59e0b, #ec4899);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.press-start {
+  font-family: var(--arcade); font-size: 0.9rem; letter-spacing: 2px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff; padding: 22px 44px; border: none; border-radius: 14px;
+  cursor: pointer; box-shadow: 0 12px 40px rgba(99,102,241,.5), inset 0 -3px 0 rgba(0,0,0,.2);
+  transition: all .2s; animation: pulse 1.6s ease-in-out infinite;
+  position: relative; overflow: hidden;
+}
+@keyframes pulse {
+  0%,100% { transform: scale(1); box-shadow: 0 12px 40px rgba(99,102,241,.5), inset 0 -3px 0 rgba(0,0,0,.2); }
+  50%     { transform: scale(1.04); box-shadow: 0 16px 56px rgba(236,72,153,.6), inset 0 -3px 0 rgba(0,0,0,.2); }
+}
+.press-start:hover { transform: scale(1.08) translateY(-3px); animation-play-state: paused; }
+.press-start:active { transform: scale(0.98); }
+.hero-hint {
+  font-family: var(--arcade); font-size: 0.55rem; letter-spacing: 2px;
+  color: var(--muted); margin-top: 26px; opacity: 0;
+  animation: blink 1.4s steps(2, start) 2s infinite;
+}
+@keyframes blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+.hero-langs {
+  display: flex; gap: 18px; justify-content: center;
+  margin-top: 32px; opacity: 0;
+}
+.hero-lang-chip {
+  font-family: var(--display); font-weight: 600;
+  padding: 8px 18px; border-radius: 24px;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+  font-size: 0.9rem; backdrop-filter: blur(8px);
+}
+
+/* ── Level 2: Problem ─────────────────────────────────────────────────────── */
+#level-2 {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(239,68,68,.15), transparent 60%),
+    linear-gradient(180deg, #14142b, #1a0a0f);
+}
+.problem-stage {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 60px;
+  align-items: center; max-width: 1100px; margin: 0 auto;
+}
+@media (max-width: 900px) { .problem-stage { grid-template-columns: 1fr; gap: 40px; } }
+.student-scene {
+  position: relative; height: 360px;
+  display: flex; align-items: center; justify-content: center;
+}
+.student-emoji {
+  font-size: 8rem; filter: drop-shadow(0 0 30px rgba(239,68,68,.4));
+  animation: shake 4s ease-in-out infinite;
+}
+@keyframes shake {
+  0%,100% { transform: rotate(0); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+.doubt-bubble {
+  position: absolute; padding: 8px 14px;
+  background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3);
+  border-radius: 100px; font-size: 0.85rem; font-weight: 500;
+  color: #fca5a5; backdrop-filter: blur(8px);
+  opacity: 0; transform: scale(0.5);
+  animation: bubblePop 7s ease-in-out infinite;
+  white-space: nowrap;
+}
+@keyframes bubblePop {
+  0%, 90%, 100% { opacity: 0; transform: scale(0.5); }
+  10%, 80% { opacity: 1; transform: scale(1); }
+}
+.doubt-bubble:nth-child(1) { top: 10%; left: 5%; animation-delay: 0s; }
+.doubt-bubble:nth-child(2) { top: 20%; right: 5%; animation-delay: 1s; }
+.doubt-bubble:nth-child(3) { bottom: 30%; left: 0%; animation-delay: 2s; }
+.doubt-bubble:nth-child(4) { bottom: 10%; right: 8%; animation-delay: 3s; }
+.doubt-bubble:nth-child(5) { top: 50%; left: 50%; animation-delay: 4s; }
+.doubt-bubble:nth-child(6) { top: 65%; right: 30%; animation-delay: 5s; }
+
+.problem-text .level-tag { color: #ef4444; }
+.problem-text h2 {
+  font-family: var(--display); font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 800; line-height: 1.15; letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+.problem-text h2 .strike { text-decoration: line-through; color: #fca5a5; }
+.problem-text p { color: var(--muted); font-size: 1rem; line-height: 1.65; }
+
+/* ── Level 3: Grounded chat demo ──────────────────────────────────────────── */
+#level-3 {
+  background:
+    radial-gradient(ellipse at 30% 30%, rgba(20,184,166,.18), transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(6,182,212,.15), transparent 50%),
+    linear-gradient(180deg, #1a0a0f, #08181a);
+}
+.grounded-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 50px;
+  align-items: center; max-width: 1100px; margin: 0 auto;
+}
+@media (max-width: 900px) { .grounded-grid { grid-template-columns: 1fr; } }
+#level-3 .level-tag { color: #14b8a6; }
+
+.chat-demo {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px; padding: 18px; backdrop-filter: blur(12px);
+  display: flex; flex-direction: column; gap: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.4);
+  min-height: 380px;
+}
+.chat-bubble { padding: 12px 16px; border-radius: 14px; font-size: 0.9rem; line-height: 1.55; max-width: 85%; opacity: 0; transform: translateY(10px); }
+.chat-bubble.user {
+  align-self: flex-end; background: linear-gradient(135deg, #14b8a6, #06b6d4); color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.chat-bubble.bot {
+  align-self: flex-start; background: rgba(255,255,255,.07); color: #f1f5f9;
+  border: 1px solid rgba(255,255,255,.1); border-bottom-left-radius: 4px;
+}
+.typing-dots { display: inline-flex; gap: 4px; padding: 4px 0; }
+.typing-dots span { width: 7px; height: 7px; border-radius: 50%; background: #14b8a6; animation: bounce 1s infinite; }
+.typing-dots span:nth-child(2) { animation-delay: .15s; }
+.typing-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%,80%,100%{ transform: translateY(0);} 40%{ transform: translateY(-6px);} }
+.citation-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, #14b8a6, #06b6d4); color: #fff;
+  font-size: 0.72rem; font-weight: 700; padding: 5px 11px;
+  border-radius: 100px; margin-top: 8px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(20,184,166,.4);
+  transition: transform .2s;
+}
+.citation-chip:hover { transform: translateY(-2px) scale(1.04); }
+
+.book-stage {
+  perspective: 1200px; height: 380px;
+  display: flex; align-items: center; justify-content: center; position: relative;
+}
+.book {
+  position: relative; width: 280px; height: 360px;
+  transform-style: preserve-3d;
+  transition: transform 1.2s cubic-bezier(.22,1,.36,1);
+}
+.book-cover, .book-page {
+  position: absolute; inset: 0; border-radius: 4px 12px 12px 4px;
+  backface-visibility: hidden;
+}
+.book-cover {
+  background: linear-gradient(135deg, #134e4a, #0f766e);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 30px; transform-origin: left center;
+  box-shadow: 6px 8px 28px rgba(0,0,0,.5), inset -10px 0 30px rgba(0,0,0,.3);
+  border: 2px solid rgba(255,255,255,.1);
+}
+.book-cover-emblem { font-size: 3.5rem; margin-bottom: 14px; opacity: .9; }
+.book-cover-title { font-family: var(--display); font-weight: 700; font-size: 1.2rem; text-align: center; color: #fff; }
+.book-cover-sub { font-size: 0.75rem; color: rgba(255,255,255,.6); margin-top: 8px; }
+.book-cover-side {
+  position: absolute; left: -8px; top: 4px; bottom: 4px; width: 8px;
+  background: linear-gradient(90deg, #0f766e, #0d5b56);
+  border-radius: 4px 0 0 4px;
+}
+
+.book-page {
+  background: #fef3c7;
+  padding: 24px 22px; color: #3f3014; font-family: Georgia, serif;
+  transform-origin: left center;
+  box-shadow: inset 8px 0 16px rgba(0,0,0,.08), 6px 8px 28px rgba(0,0,0,.4);
+}
+.book-page-num { font-size: 0.7rem; opacity: .55; margin-bottom: 12px; font-family: var(--display); letter-spacing: 1px; }
+.book-page h4 { font-size: 1.05rem; margin-bottom: 10px; color: #1c1208; }
+.book-page p { font-size: 0.82rem; line-height: 1.6; margin-bottom: 7px; }
+.highlight {
+  background: linear-gradient(120deg, transparent 0%, transparent 100%);
+  padding: 1px 2px; transition: background 1.5s ease-out 0.3s;
+}
+.book.opened .highlight { background: linear-gradient(120deg, #fde68a 0%, #fcd34d 100%); }
+
+.book.opened { transform: rotateY(-10deg); }
+.book.opened .book-cover { transform: rotateY(-160deg); }
+
+/* ── Level 4: Languages ───────────────────────────────────────────────────── */
+#level-4 {
+  background:
+    radial-gradient(ellipse at 10% 30%, rgba(245,158,11,.15), transparent 55%),
+    radial-gradient(ellipse at 90% 70%, rgba(16,185,129,.13), transparent 55%),
+    linear-gradient(180deg, #08181a, #1a1408);
+}
+#level-4 .level-tag { color: #f59e0b; }
+
+.lang-stage { text-align: center; max-width: 800px; margin: 0 auto; }
+.lang-tabs { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 36px; }
+.lang-tab {
+  font-family: var(--display); font-weight: 600; font-size: 1rem;
+  padding: 12px 26px; border-radius: 100px;
+  background: rgba(255,255,255,.06); border: 1.5px solid rgba(255,255,255,.12);
+  color: var(--text); cursor: pointer; transition: all .25s;
+}
+.lang-tab.active {
+  background: linear-gradient(135deg, #f59e0b, #ec4899);
+  border-color: transparent; transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 12px 32px rgba(245,158,11,.4);
+}
+.lang-answer-card {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px; padding: 32px; backdrop-filter: blur(14px);
+  font-size: 1.1rem; line-height: 1.7; min-height: 180px;
+  display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
+  text-align: left;
+}
+.lang-q { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+.lang-a { font-size: 1.05rem; font-weight: 500; color: #fff; }
+.lang-cite {
+  font-family: var(--arcade); font-size: 0.55rem; letter-spacing: 1.5px;
+  color: #f59e0b; margin-top: 8px;
+}
+
+/* ── Level 5: Voice ───────────────────────────────────────────────────────── */
+#level-5 {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(236,72,153,.2), transparent 60%),
+    linear-gradient(180deg, #1a1408, #1a0a1a);
+}
+#level-5 .level-tag { color: #ec4899; }
+
+.voice-stage { text-align: center; }
+.mic-container {
+  position: relative; display: inline-block;
+  margin: 30px 0 40px; cursor: pointer;
+}
+.mic-rings {
+  position: absolute; inset: -90px; pointer-events: none;
+}
+.mic-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 2px solid rgba(236,72,153,.4);
+  animation: ringExpand 2.2s ease-out infinite;
+}
+.mic-ring:nth-child(2) { animation-delay: .55s; }
+.mic-ring:nth-child(3) { animation-delay: 1.1s; }
+@keyframes ringExpand {
+  0% { transform: scale(0.4); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+.mic-button {
+  width: 130px; height: 130px; border-radius: 50%;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3.5rem; box-shadow: 0 20px 60px rgba(236,72,153,.5);
+  transition: transform .2s; border: none; cursor: pointer; color: white;
+}
+.mic-button:hover { transform: scale(1.08); }
+.mic-button:active { transform: scale(0.95); }
+.waveform {
+  display: flex; gap: 5px; justify-content: center; align-items: center;
+  height: 60px; margin: 18px 0;
+}
+.wave-bar {
+  width: 5px; background: linear-gradient(180deg, #ec4899, #8b5cf6);
+  border-radius: 4px; height: 20%;
+  animation: wave 1s ease-in-out infinite;
+}
+@keyframes wave { 0%,100% { height: 20%; } 50% { height: 90%; } }
+.voice-transcript {
+  font-size: 1.05rem; max-width: 540px; margin: 8px auto 0;
+  padding: 14px 22px; border-radius: 14px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  color: var(--muted); font-style: italic; min-height: 52px;
+}
+.voice-transcript.live { color: #fff; font-style: normal; }
+
+/* ── Level 6: No hallucinations ───────────────────────────────────────────── */
+#level-6 {
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(16,185,129,.16), transparent 55%),
+    linear-gradient(180deg, #1a0a1a, #08181a);
+}
+#level-6 .level-tag { color: #10b981; }
+
+.trust-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+  max-width: 1100px; margin: 0 auto;
+}
+@media (max-width: 900px) { .trust-grid { grid-template-columns: 1fr; gap: 40px; } }
+
+.refusal-demo {
+  display: flex; flex-direction: column; gap: 12px;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  padding: 18px; border-radius: 18px;
+}
+.refusal-demo .chat-bubble.bad {
+  background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); color: #fca5a5;
+  position: relative; padding-right: 40px;
+}
+.bad-mark {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 1.4rem; color: #ef4444;
+}
+.refusal-demo .chat-bubble.good {
+  background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.3); color: #6ee7b7;
+}
+.good-mark { display: inline-block; margin-right: 4px; }
+
+/* ── Level 7: Pricing ─────────────────────────────────────────────────────── */
+#level-7 {
+  background:
+    radial-gradient(ellipse at 30% 30%, rgba(251,191,36,.16), transparent 55%),
+    radial-gradient(ellipse at 70% 70%, rgba(236,72,153,.12), transparent 55%),
+    linear-gradient(180deg, #08181a, #1a1408);
+}
+#level-7 .level-tag { color: #fbbf24; }
+.pricing-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+  max-width: 1100px; margin: 0 auto;
+}
+@media (max-width: 900px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+.tier-card {
+  position: relative; padding: 30px 26px; border-radius: 22px;
+  background: rgba(255,255,255,.04); border: 1.5px solid rgba(255,255,255,.1);
+  backdrop-filter: blur(12px);
+  cursor: pointer; transition: all .35s cubic-bezier(.22,1,.36,1);
+  display: flex; flex-direction: column; gap: 14px;
+  min-height: 460px;
+}
+.tier-card:hover {
+  transform: translateY(-12px) scale(1.02);
+  border-color: var(--tier-color, var(--primary));
+  box-shadow: 0 24px 60px rgba(99,102,241,.3);
+}
+.tier-card.featured {
+  border-color: var(--tier-color);
+  box-shadow: 0 24px 60px var(--tier-glow);
+}
+.tier-card.featured::before {
+  content: 'POPULAR'; position: absolute; top: -12px; right: 24px;
+  font-family: var(--arcade); font-size: 0.55rem; letter-spacing: 2px;
+  background: linear-gradient(135deg, #fbbf24, #ec4899);
+  color: #fff; padding: 6px 12px; border-radius: 6px;
+}
+.tier-avatar {
+  width: 80px; height: 80px; border-radius: 20px;
+  background: var(--tier-bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.6rem; margin-bottom: 6px;
+  box-shadow: 0 12px 28px var(--tier-glow);
+}
+.tier-name { font-family: var(--display); font-weight: 700; font-size: 1.4rem; }
+.tier-class { font-family: var(--arcade); font-size: 0.55rem; letter-spacing: 1.5px; color: var(--tier-color); }
+.tier-price { font-family: var(--display); font-weight: 800; font-size: 2.2rem; line-height: 1; }
+.tier-price small { font-size: 0.85rem; font-weight: 500; color: var(--muted); }
+.tier-stats { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 8px; font-size: 0.88rem; color: var(--muted); }
+.tier-stats li { display: flex; align-items: center; gap: 8px; }
+.tier-stats li::before { content: '▸'; color: var(--tier-color); font-weight: 700; }
+.tier-cta {
+  margin-top: auto; padding: 12px; border: none; border-radius: 12px;
+  font-family: var(--display); font-weight: 600; font-size: 0.95rem;
+  background: var(--tier-bg); color: #fff; cursor: pointer; transition: all .2s;
+}
+.tier-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 20px var(--tier-glow); }
+
+/* ── Level 8: Finish ──────────────────────────────────────────────────────── */
+#level-8 {
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(99,102,241,.25), transparent 55%),
+    radial-gradient(ellipse at 70% 60%, rgba(236,72,153,.25), transparent 55%),
+    linear-gradient(180deg, #1a1408, #14081a);
+}
+.finish-stage { text-align: center; }
+.trophy { font-size: 6rem; filter: drop-shadow(0 8px 30px rgba(251,191,36,.5)); animation: bounceTrophy 2s ease-in-out infinite; }
+@keyframes bounceTrophy { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-12px) rotate(3deg); } }
+.finish-title {
+  font-family: var(--arcade); font-size: clamp(1.4rem, 4vw, 2.4rem);
+  background: linear-gradient(135deg, #fbbf24, #ec4899, #6366f1);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  letter-spacing: 2px; margin: 18px 0 8px;
+}
+.finish-sub { color: var(--muted); font-size: 1.1rem; margin-bottom: 32px; }
+.finish-cta {
+  display: inline-block; padding: 22px 50px;
+  background: linear-gradient(135deg, #6366f1, #ec4899, #f59e0b);
+  background-size: 200% 100%;
+  color: #fff; border: none; border-radius: 16px; cursor: pointer;
+  font-family: var(--display); font-weight: 700; font-size: 1.15rem;
+  box-shadow: 0 16px 48px rgba(99,102,241,.5);
+  transition: all .25s; animation: gradientMove 6s ease infinite;
+}
+.finish-cta:hover { transform: translateY(-4px) scale(1.04); box-shadow: 0 24px 60px rgba(236,72,153,.6); }
+.finish-stats {
+  display: flex; gap: 38px; justify-content: center; flex-wrap: wrap;
+  margin-top: 50px; padding: 24px; border-top: 1px solid rgba(255,255,255,.08);
+}
+.finish-stat { text-align: center; }
+.finish-stat-num {
+  font-family: var(--display); font-weight: 800; font-size: 1.8rem;
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.finish-stat-lbl { font-size: 0.78rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+
+/* ── Confetti ─────────────────────────────────────────────────────────────── */
+.confetti {
+  position: fixed; inset: 0; pointer-events: none; z-index: 9997;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute; width: 10px; height: 18px;
+  top: -30px; animation: confetti-fall 3s linear forwards;
+}
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .hero-title { background-position: 0 !important; }
+}
+</style>
+</head>
+<body data-level="1">
+
+<!-- ── HUD ──────────────────────────────────────────────────────────────────── -->
+<div class="hud">
+  <div class="hud-logo">VERNA<span style="color:#ec4899">SOLVER</span></div>
+  <div class="hud-level">LVL <span id="hudLvlNum">1</span>/8 · <span id="hudLvlName">START</span></div>
+  <div class="hud-bar"><div class="hud-bar-fill" id="hudBarFill"></div></div>
+  <div class="hud-actions">
+    <button class="hud-btn icon" id="soundToggle" title="Toggle sound">🔇</button>
+    <button class="hud-btn cta" onclick="window.location.href='/app'">Open App →</button>
+  </div>
+</div>
+
+<!-- ── Cursor trail ────────────────────────────────────────────────────────── -->
+<div class="trail-dot" id="trail"></div>
+
+<!-- ── Aurora + spotlight ─────────────────────────────────────────────────── -->
+<div class="aurora-bg">
+  <div class="aurora-orb a"></div>
+  <div class="aurora-orb b"></div>
+  <div class="aurora-orb c"></div>
+</div>
+<div class="spotlight" id="spotlight"></div>
+
+<!-- ── Floating background ────────────────────────────────────────────────── -->
+<div class="bg-particles" id="bgParticles"></div>
+
+<!-- ── LEVEL 1: HERO ──────────────────────────────────────────────────────── -->
+<section class="level" id="level-1" data-name="START" data-color="#6366f1">
+  <div class="level-content hero-content">
+    <h1 class="hero-title">VernaSolver</h1>
+    <p class="hero-tagline">Your textbook. Your language. Your answers.<br />
+      Get explanations straight from <strong>NCERT</strong> — in Hindi, Marathi, or English.</p>
+    <button class="press-start" id="pressStart">▶ PRESS START</button>
+    <div class="hero-hint">SCROLL TO BEGIN</div>
+    <div class="hero-langs">
+      <span class="hero-lang-chip">🇮🇳 हिंदी</span>
+      <span class="hero-lang-chip">🇮🇳 मराठी</span>
+      <span class="hero-lang-chip">🇮🇳 English</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── LEVEL 2: PROBLEM ───────────────────────────────────────────────────── -->
+<section class="level" id="level-2" data-name="THE PROBLEM" data-color="#ef4444">
+  <div class="level-content">
+    <div class="problem-stage">
+      <div class="student-scene">
+        <div class="doubt-bubble">"Why won't ChatGPT cite my book?"</div>
+        <div class="doubt-bubble">"मुझे हिंदी में चाहिए..."</div>
+        <div class="doubt-bubble">"Is this even from NCERT?"</div>
+        <div class="doubt-bubble">"Confused!"</div>
+        <div class="doubt-bubble">"Tutor is too expensive 😞"</div>
+        <div class="doubt-bubble">"समजत नाहीये..."</div>
+        <div class="student-emoji">🧑‍🎓</div>
+      </div>
+      <div class="problem-text">
+        <div class="level-tag">LEVEL 02</div>
+        <h2>Students don't need <span class="strike">more answers.</span><br />They need the <em>right</em> answers.</h2>
+        <p>Generic chatbots invent facts, ignore the prescribed syllabus, and answer in only one language. Tutors are expensive. Textbooks alone leave doubts unanswered. There's a gap — and a generation falling through it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LEVEL 3: TEXTBOOK-GROUNDED ─────────────────────────────────────────── -->
+<section class="level" id="level-3" data-name="GROUNDED ANSWERS" data-color="#14b8a6">
+  <div class="level-content">
+    <div class="grounded-grid">
+      <div>
+        <div class="level-tag">LEVEL 03</div>
+        <h2 class="level-title">Straight from the book. Always.</h2>
+        <p class="level-sub">Every answer is grounded in your prescribed textbook — and comes with the exact page citation. Click it to <em>see</em> the page open with the passage highlighted.</p>
+        <div class="chat-demo" id="chatDemo">
+          <div class="chat-bubble user" data-step="1">What is photosynthesis?</div>
+          <div class="chat-bubble bot" data-step="2"><span class="typing-dots"><span></span><span></span><span></span></span></div>
+          <div class="chat-bubble bot" data-step="3" style="display:none">
+            Photosynthesis is the process by which green plants use <strong>sunlight, water and carbon dioxide</strong> to produce their own food (glucose) and release oxygen.
+            <br /><br />
+            <span class="citation-chip" id="openBook">📖 NCERT Class 10 Science · p.142</span>
+          </div>
+        </div>
+      </div>
+      <div class="book-stage">
+        <div class="book" id="book">
+          <div class="book-page">
+            <div class="book-page-num">Chapter 6  ·  PAGE 142</div>
+            <h4>6.1 What is Photosynthesis?</h4>
+            <p>The process by which green plants make their own food is called photosynthesis.</p>
+            <p><span class="highlight">Photosynthesis is the process by which green plants use sunlight, water and carbon dioxide to produce their own food (glucose) and release oxygen.</span></p>
+            <p>The raw materials required for photosynthesis are carbon dioxide and water. Energy comes from sunlight, absorbed by chlorophyll.</p>
+            <p style="margin-top:14px"><em>6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂</em></p>
+          </div>
+          <div class="book-cover">
+            <div class="book-cover-side"></div>
+            <div class="book-cover-emblem">📘</div>
+            <div class="book-cover-title">NCERT</div>
+            <div class="book-cover-title" style="font-size:.95rem">Science · Class 10</div>
+            <div class="book-cover-sub">Government of India</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LEVEL 4: LANGUAGES ─────────────────────────────────────────────────── -->
+<section class="level" id="level-4" data-name="MULTILINGUAL" data-color="#f59e0b">
+  <div class="level-content">
+    <div class="lang-stage">
+      <div class="level-tag">LEVEL 04</div>
+      <h2 class="level-title">Speaks your language. Literally.</h2>
+      <p class="level-sub" style="margin-inline:auto;text-align:center">Same question. Same source. Three languages. Tap a chip to morph the answer.</p>
+      <div class="lang-tabs">
+        <button class="lang-tab active" data-lang="en">English</button>
+        <button class="lang-tab" data-lang="hi">हिंदी</button>
+        <button class="lang-tab" data-lang="mr">मराठी</button>
+      </div>
+      <div class="lang-answer-card" id="langAnswer">
+        <div class="lang-q" id="langQ">Q: What is photosynthesis?</div>
+        <div class="lang-a" id="langA">Photosynthesis is the process by which green plants use sunlight, water and carbon dioxide to make their food and release oxygen.</div>
+        <div class="lang-cite">📖 NCERT CLASS 10 SCIENCE · P.142</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LEVEL 5: VOICE ─────────────────────────────────────────────────────── -->
+<section class="level" id="level-5" data-name="VOICE MODE" data-color="#ec4899">
+  <div class="level-content">
+    <div class="voice-stage">
+      <div class="level-tag">LEVEL 05</div>
+      <h2 class="level-title">Stuck? Just ask out loud.</h2>
+      <p class="level-sub" style="margin-inline:auto;text-align:center">Tap the mic. Ask in <em>any</em> language. Get an answer instantly — no typing required.</p>
+      <div class="mic-container" id="micContainer">
+        <div class="mic-rings">
+          <div class="mic-ring"></div><div class="mic-ring"></div><div class="mic-ring"></div>
+        </div>
+        <button class="mic-button" aria-label="Activate microphone">🎙️</button>
+      </div>
+      <div class="waveform" id="waveform">
+        <!-- bars added by JS -->
+      </div>
+      <div class="voice-transcript" id="voiceTranscript">Tap the mic to start speaking…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LEVEL 6: NO HALLUCINATIONS ─────────────────────────────────────────── -->
+<section class="level" id="level-6" data-name="ANTI-HALLUCINATION" data-color="#10b981">
+  <div class="level-content">
+    <div class="trust-grid">
+      <div>
+        <div class="level-tag">LEVEL 06</div>
+        <h2 class="level-title">No made-up answers. Period.</h2>
+        <p class="level-sub">If the answer isn't in your textbook, VernaSolver says so — instead of confidently making one up. No phantom equations. No invented citations. No silent errors in your exam prep.</p>
+      </div>
+      <div class="refusal-demo">
+        <div class="chat-bubble user" style="opacity:1;transform:none">Who built the Taj Mahal in 1980?</div>
+        <div class="chat-bubble bad" style="opacity:1;transform:none">
+          The Taj Mahal was built in 1980 by Mughal architect Akbar…
+          <span class="bad-mark">❌</span>
+        </div>
+        <div style="text-align:center;font-family:var(--arcade);font-size:.6rem;color:#10b981;letter-spacing:2px;margin:6px 0">VERNASOLVER WOULD SAY ↓</div>
+        <div class="chat-bubble good" style="opacity:1;transform:none">
+          <span class="good-mark">✅</span> I couldn't find a clear answer to this in the provided book content.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LEVEL 7: PRICING ───────────────────────────────────────────────────── -->
+<section class="level" id="level-7" data-name="FINAL BOSS · PRICING" data-color="#fbbf24">
+  <div class="level-content">
+    <div style="text-align:center">
+      <div class="level-tag">LEVEL 07 · FINAL BOSS</div>
+      <h2 class="level-title">Pick your character.</h2>
+      <p class="level-sub" style="margin-inline:auto;text-align:center;margin-bottom:40px">Three plans. Same brain. Different unlocks.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="tier-card" style="--tier-color:#14b8a6;--tier-bg:linear-gradient(135deg,#0d9488,#14b8a6);--tier-glow:rgba(20,184,166,.35)">
+        <div class="tier-avatar">🌱</div>
+        <div class="tier-class">CLASS · EXPLORER</div>
+        <div class="tier-name">Free</div>
+        <div class="tier-price">₹0<small>/forever</small></div>
+        <ul class="tier-stats">
+          <li>5 questions per day</li>
+          <li>1 textbook</li>
+          <li>English only</li>
+          <li>Page citations</li>
+        </ul>
+        <button class="tier-cta" onclick="window.location.href='/app'">Start Free →</button>
+      </div>
+      <div class="tier-card featured" style="--tier-color:#ec4899;--tier-bg:linear-gradient(135deg,#ec4899,#8b5cf6);--tier-glow:rgba(236,72,153,.45)">
+        <div class="tier-avatar">⚡</div>
+        <div class="tier-class">CLASS · SCHOLAR</div>
+        <div class="tier-name">Student</div>
+        <div class="tier-price">₹99<small>/month</small></div>
+        <ul class="tier-stats">
+          <li>Unlimited questions</li>
+          <li>Unlimited textbooks</li>
+          <li>Hindi · Marathi · English</li>
+          <li>Voice input</li>
+          <li>Derivation step-cards</li>
+          <li>Diagram & figure rendering</li>
+        </ul>
+        <button class="tier-cta" onclick="window.location.href='/app'">Get Scholar →</button>
+      </div>
+      <div class="tier-card" style="--tier-color:#fbbf24;--tier-bg:linear-gradient(135deg,#f59e0b,#fbbf24);--tier-glow:rgba(251,191,36,.4)">
+        <div class="tier-avatar">🏛️</div>
+        <div class="tier-class">CLASS · INSTITUTION</div>
+        <div class="tier-name">School</div>
+        <div class="tier-price" style="font-size:1.6rem">Custom<small>/quote</small></div>
+        <ul class="tier-stats">
+          <li>For 100–10,000 students</li>
+          <li>Bring your own syllabus</li>
+          <li>Teacher dashboard</li>
+          <li>Usage analytics</li>
+          <li>Priority support</li>
+        </ul>
+        <button class="tier-cta" onclick="window.location.href='mailto:hello@vernasolver.in'">Contact Us</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LEVEL 8: FINISH ────────────────────────────────────────────────────── -->
+<section class="level" id="level-8" data-name="VICTORY!" data-color="#6366f1">
+  <div class="level-content finish-stage">
+    <div class="trophy">🏆</div>
+    <div class="level-tag" style="margin-bottom:6px">LEVEL 08 · COMPLETE</div>
+    <h2 class="finish-title">YOU'VE REACHED THE END.<br>NOW START SOLVING.</h2>
+    <p class="finish-sub">Join the students learning from their own textbooks, in their own language.</p>
+    <button class="finish-cta" id="finish-cta">🚀 Start Solving — It's Free</button>
+    <div class="finish-stats">
+      <div class="finish-stat"><div class="finish-stat-num" data-target="3">0</div><div class="finish-stat-lbl">Languages</div></div>
+      <div class="finish-stat"><div class="finish-stat-num">∞</div><div class="finish-stat-lbl">Textbooks</div></div>
+      <div class="finish-stat"><div class="finish-stat-num" data-target="100">0</div><div class="finish-stat-lbl">% Sourced</div></div>
+      <div class="finish-stat"><div class="finish-stat-num" data-target="0">0</div><div class="finish-stat-lbl">Hallucinations</div></div>
+    </div>
+  </div>
+</section>
+
+<script>
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ── Cursor trail + spotlight ────────────────────────────────────────────── */
+(() => {
+  const trail = document.getElementById('trail');
+  let x = 0, y = 0, tx = 0, ty = 0;
+  document.addEventListener('mousemove', (e) => {
+    x = e.clientX; y = e.clientY;
+    document.documentElement.style.setProperty('--mx', x + 'px');
+    document.documentElement.style.setProperty('--my', y + 'px');
+  });
+  function tick() {
+    tx += (x - tx) * 0.18; ty += (y - ty) * 0.18;
+    trail.style.transform = `translate(${tx - 5}px, ${ty - 5}px)`;
+    requestAnimationFrame(tick);
+  }
+  if (!reducedMotion) tick();
+})();
+
+/* ── Magnetic buttons (Press Start / Finish CTA) ────────────────────────── */
+(() => {
+  if (reducedMotion) return;
+  document.querySelectorAll('.press-start, .finish-cta').forEach(btn => {
+    btn.addEventListener('mousemove', e => {
+      const rect = btn.getBoundingClientRect();
+      const mx = e.clientX - rect.left - rect.width / 2;
+      const my = e.clientY - rect.top - rect.height / 2;
+      btn.style.transform = `translate(${mx * 0.18}px, ${my * 0.18}px)`;
+    });
+    btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+  });
+})();
+
+/* ── 3D tilt on pricing tier cards ───────────────────────────────────────── */
+(() => {
+  if (reducedMotion) return;
+  document.querySelectorAll('.tier-card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      const cx = rect.width / 2, cy = rect.height / 2;
+      const rotateY = ((x - cx) / cx) * 10;
+      const rotateX = -((y - cy) / cy) * 10;
+      card.style.transform = `perspective(1100px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-12px) scale(1.025)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
+  });
+})();
+
+/* ── Click sparkle burst ─────────────────────────────────────────────────── */
+(() => {
+  if (reducedMotion) return;
+  const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#fbbf24'];
+  document.addEventListener('click', e => {
+    // Skip clicks on plain links/scrollbars
+    const t = e.target;
+    if (!t || t.tagName === 'HTML' || t.tagName === 'BODY') return;
+    for (let i = 0; i < 14; i++) {
+      const s = document.createElement('div');
+      s.className = 'sparkle';
+      s.style.left = (e.clientX - 3) + 'px';
+      s.style.top  = (e.clientY - 3) + 'px';
+      const c = colors[Math.floor(Math.random() * colors.length)];
+      s.style.background = c;
+      s.style.color = c;
+      const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.3;
+      const dist  = 45 + Math.random() * 35;
+      s.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+      s.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 800);
+    }
+  });
+})();
+
+/* ── Achievement toasts on level-up ──────────────────────────────────────── */
+const achievements = {
+  2: 'First Quest Accepted',
+  3: 'Found the Source',
+  4: 'Polyglot Unlocked',
+  5: 'Voice Activated',
+  6: 'Trust Verified',
+  7: 'Final Boss Approached',
+  8: 'Quest Complete! 🏆',
+};
+function showAchievement(text) {
+  const el = document.createElement('div');
+  el.className = 'achievement';
+  el.innerHTML = `
+    <div class="achievement-icon">🏆</div>
+    <div>
+      <div class="achievement-label">ACHIEVEMENT UNLOCKED</div>
+      <div class="achievement-text">${text}</div>
+    </div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 500);
+  }, 2400);
+}
+
+/* ── Konami code easter egg ──────────────────────────────────────────────── */
+(() => {
+  const code = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+  let idx = 0;
+  document.addEventListener('keydown', e => {
+    const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (key === code[idx]) {
+      idx++;
+      if (idx === code.length) {
+        idx = 0;
+        activateDevMode();
+      }
+    } else { idx = 0; }
+  });
+
+  function activateDevMode() {
+    audio.levelUp(); audio.beep(880, .12); audio.beep(1320, .14, .07);
+    showAchievement('🎮 SECRET DEV MODE');
+    if (typeof burstConfetti === 'function') burstConfetti();
+    const overlay = document.createElement('div');
+    overlay.className = 'dev-overlay';
+    overlay.innerHTML = `
+      <div class="dev-credits">
+        <h2>🎮 SECRET DEV MODE</h2>
+        <div class="team">// THE TEAM</div>
+        <div class="names">Pritam Bairagi · Shwetaki Killedar · Preksha Pokharna</div>
+        <div class="team">// THE STACK</div>
+        <div class="stack">
+          PYTHON · FASTAPI · CHROMADB<br/>
+          CLAUDE SONNET 4.6 · MINILM · PYMUPDF<br/>
+          VANILLA JS · GSAP · NO BUILD STEP
+        </div>
+        <div class="konami-hint">↑↑↓↓←→←→ B A — YOU FOUND IT</div>
+      </div>`;
+    overlay.addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.remove(), 6500);
+  }
+})();
+
+/* ── Count-up animation for finish stats ─────────────────────────────────── */
+(() => {
+  function countUp(el, target, dur = 1400) {
+    if (reducedMotion) { el.textContent = target; return; }
+    const startTime = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - startTime) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * eased);
+      if (t < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+  ScrollTrigger.create({
+    trigger: '#level-8', start: 'top 60%', once: true,
+    onEnter: () => {
+      document.querySelectorAll('.finish-stat-num').forEach(el => {
+        const t = el.dataset.target;
+        if (t && !isNaN(+t)) countUp(el, +t);
+      });
+    }
+  });
+})();
+
+/* ── Floating book particles ─────────────────────────────────────────────── */
+(() => {
+  const container = document.getElementById('bgParticles');
+  const icons = ['📖','📘','📝','✏️','📚','🔬','🧪','📐','✨'];
+  const count = window.innerWidth < 768 ? 8 : 20;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'book-particle';
+    p.textContent = icons[Math.floor(Math.random() * icons.length)];
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.animationDelay = -Math.random() * 25 + 's';
+    p.style.animationDuration = (15 + Math.random() * 25) + 's';
+    p.style.fontSize = (1 + Math.random() * 1.5) + 'rem';
+    container.appendChild(p);
+  }
+})();
+
+/* ── Sound (simple synth beeps via WebAudio) ─────────────────────────────── */
+const audio = {
+  enabled: false,
+  ctx: null,
+  init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+  beep(freq = 440, dur = 0.08, vol = 0.05, type = 'square') {
+    if (!this.enabled) return;
+    this.init();
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.value = vol;
+    g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + dur);
+    o.connect(g).connect(this.ctx.destination);
+    o.start(); o.stop(this.ctx.currentTime + dur);
+  },
+  click() { this.beep(660, 0.05, 0.04); },
+  levelUp() { this.beep(523, 0.08); setTimeout(() => this.beep(784, 0.12, 0.06), 60); },
+};
+document.getElementById('soundToggle').addEventListener('click', (e) => {
+  audio.enabled = !audio.enabled;
+  e.target.textContent = audio.enabled ? '🔊' : '🔇';
+  if (audio.enabled) audio.levelUp();
+});
+document.querySelectorAll('button, .lang-tab, .citation-chip, .tier-card').forEach(b => {
+  b.addEventListener('click', () => audio.click());
+});
+
+/* ── HUD progress bar + level tracking ───────────────────────────────────── */
+(() => {
+  const fill = document.getElementById('hudBarFill');
+  const lvlNum = document.getElementById('hudLvlNum');
+  const lvlName = document.getElementById('hudLvlName');
+  const sections = Array.from(document.querySelectorAll('.level'));
+  let currentLevel = 1;
+
+  function update() {
+    const scroll = window.scrollY;
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = total > 0 ? Math.min(100, (scroll / total) * 100) : 0;
+    fill.style.width = pct + '%';
+
+    let newLevel = 1;
+    const midline = scroll + window.innerHeight / 2;
+    sections.forEach((s, i) => {
+      const top = s.offsetTop;
+      if (midline >= top) newLevel = i + 1;
+    });
+    if (newLevel !== currentLevel) {
+      currentLevel = newLevel;
+      lvlNum.textContent = newLevel;
+      lvlName.textContent = sections[newLevel - 1].dataset.name;
+      document.body.dataset.level = newLevel;
+      audio.levelUp();
+      // accent color from data-color
+      const c = sections[newLevel - 1].dataset.color;
+      document.documentElement.style.setProperty('--primary', c);
+      // arcade achievement toast
+      if (achievements[newLevel]) showAchievement(achievements[newLevel]);
+    }
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  update();
+})();
+
+/* ── Press Start button ──────────────────────────────────────────────────── */
+document.getElementById('pressStart').addEventListener('click', () => {
+  if (window.__snapTo) window.__snapTo(1);
+  else gsap.to(window, { duration: 1.0, scrollTo: '#level-2', ease: 'power3.inOut' });
+});
+document.getElementById('finish-cta').addEventListener('click', () => {
+  burstConfetti();
+  audio.levelUp();
+  setTimeout(() => { window.location.href = '/app'; }, 800);
+});
+
+/* ── Snap-scroll: one wheel/swipe/arrow = one level ─────────────────────── */
+(() => {
+  if (reducedMotion) return;
+
+  const sections = Array.from(document.querySelectorAll('.level'));
+  let currentSection = 0;
+  let isSnapping = false;
+  let wheelLockUntil = 0;
+
+  function detectSection() {
+    const mid = window.scrollY + window.innerHeight / 2;
+    for (let i = 0; i < sections.length; i++) {
+      const top = sections[i].offsetTop;
+      const bot = top + sections[i].offsetHeight;
+      if (mid >= top && mid < bot) return i;
+    }
+    return Math.max(0, sections.length - 1);
+  }
+  currentSection = detectSection();
+
+  function snapTo(index) {
+    index = Math.max(0, Math.min(sections.length - 1, index));
+    if (index === currentSection || isSnapping) return;
+    isSnapping = true;
+    currentSection = index;
+    gsap.to(window, {
+      duration: 0.9,
+      scrollTo: { y: sections[index], autoKill: false },
+      ease: 'power3.inOut',
+      onComplete: () => {
+        isSnapping = false;
+        wheelLockUntil = Date.now() + 280; // ignore trailing inertia events
+      },
+    });
+  }
+
+  window.__snapTo = snapTo;
+
+  // Keep currentSection in sync when other paths change scroll (resize, hash, etc.)
+  window.addEventListener('scroll', () => {
+    if (!isSnapping) currentSection = detectSection();
+  }, { passive: true });
+
+  // ── Wheel — debounced so one gesture = one level ──────────────────────
+  let wheelTimer = null;
+  let wheelAccum = 0;
+  window.addEventListener('wheel', (e) => {
+    if (isSnapping || Date.now() < wheelLockUntil) { e.preventDefault(); return; }
+    e.preventDefault();
+    wheelAccum += e.deltaY;
+    if (wheelTimer) return;
+    wheelTimer = setTimeout(() => {
+      if (Math.abs(wheelAccum) > 10) snapTo(currentSection + (wheelAccum > 0 ? 1 : -1));
+      wheelAccum = 0;
+      wheelTimer = null;
+    }, 30);
+  }, { passive: false });
+
+  // ── Keyboard ──────────────────────────────────────────────────────────
+  window.addEventListener('keydown', (e) => {
+    if (isSnapping) return;
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
+    if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+      e.preventDefault(); snapTo(currentSection + 1);
+    } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+      e.preventDefault(); snapTo(currentSection - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault(); snapTo(0);
+    } else if (e.key === 'End') {
+      e.preventDefault(); snapTo(sections.length - 1);
+    }
+  });
+
+  // ── Touch swipe ───────────────────────────────────────────────────────
+  let touchStartY = 0, touchStartTime = 0;
+  window.addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+  }, { passive: true });
+  window.addEventListener('touchend', (e) => {
+    if (isSnapping) return;
+    const dy = touchStartY - e.changedTouches[0].clientY;
+    const dt = Date.now() - touchStartTime;
+    // swipe = ≥50px in <600ms
+    if (Math.abs(dy) > 50 && dt < 600) {
+      snapTo(currentSection + (dy > 0 ? 1 : -1));
+    }
+  }, { passive: true });
+})();
+
+/* ── GSAP entrance animations per level ──────────────────────────────────── */
+gsap.utils.toArray('.level').forEach((level, i) => {
+  const tag = level.querySelector('.level-tag');
+  const title = level.querySelector('.level-title, h2, .hero-title, .finish-title');
+  const sub = level.querySelector('.level-sub, .hero-tagline');
+  const others = level.querySelectorAll('.chat-demo, .book-stage, .lang-tabs, .lang-answer-card, .mic-container, .waveform, .voice-transcript, .refusal-demo, .pricing-grid, .finish-cta, .finish-stats, .student-scene, .problem-text, .hero-langs, .press-start, .hero-hint');
+
+  if (reducedMotion) {
+    [tag, title, sub, ...others].forEach(el => { if (el) gsap.set(el, { opacity: 1, y: 0 }); });
+    return;
+  }
+
+  const tl = gsap.timeline({
+    scrollTrigger: {
+      trigger: level,
+      start: 'top 70%',
+      end: 'bottom 30%',
+      toggleActions: 'play none none reverse',
+    },
+  });
+  if (tag) tl.to(tag, { opacity: 1, y: 0, duration: 0.4 }, 0);
+  if (title) tl.fromTo(title, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, 0.05);
+  if (sub) tl.fromTo(sub, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6 }, 0.15);
+  others.forEach((el, k) => {
+    if (!el) return;
+    tl.fromTo(el, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6 }, 0.2 + k * 0.06);
+  });
+});
+
+/* ── Chat demo (level 3) ────────────────────────────────────────────────── */
+(() => {
+  const demo = document.getElementById('chatDemo');
+  const userMsg = demo.querySelector('[data-step="1"]');
+  const typing = demo.querySelector('[data-step="2"]');
+  const fullBot = demo.querySelector('[data-step="3"]');
+  const book = document.getElementById('book');
+  const openBtn = document.getElementById('openBook');
+
+  let played = false;
+  ScrollTrigger.create({
+    trigger: demo, start: 'top 75%',
+    onEnter: () => {
+      if (played) return; played = true;
+      gsap.to(userMsg, { opacity: 1, y: 0, duration: 0.4 });
+      setTimeout(() => gsap.to(typing, { opacity: 1, y: 0, duration: 0.3 }), 600);
+      setTimeout(() => {
+        typing.style.display = 'none';
+        fullBot.style.display = 'block';
+        gsap.fromTo(fullBot, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4 });
+        setTimeout(() => { book.classList.add('opened'); audio.levelUp(); }, 700);
+      }, 1800);
+    }
+  });
+  openBtn.addEventListener('click', () => book.classList.toggle('opened'));
+})();
+
+/* ── Language toggle (level 4) ──────────────────────────────────────────── */
+(() => {
+  const tabs = document.querySelectorAll('.lang-tab');
+  const langQ = document.getElementById('langQ');
+  const langA = document.getElementById('langA');
+  const content = {
+    en: { q: 'Q: What is photosynthesis?',
+          a: 'Photosynthesis is the process by which green plants use sunlight, water and carbon dioxide to make their food and release oxygen.' },
+    hi: { q: 'प्रश्न: प्रकाश संश्लेषण क्या है?',
+          a: 'प्रकाश संश्लेषण वह प्रक्रिया है जिसके द्वारा हरे पौधे सूर्य के प्रकाश, पानी और कार्बन डाइऑक्साइड का उपयोग करके अपना भोजन बनाते हैं और ऑक्सीजन छोड़ते हैं।' },
+    mr: { q: 'प्रश्न: प्रकाशसंश्लेषण म्हणजे काय?',
+          a: 'प्रकाशसंश्लेषण ही अशी प्रक्रिया आहे ज्यामध्ये हिरव्या वनस्पती सूर्यप्रकाश, पाणी आणि कार्बन डायऑक्साइडचा वापर करून स्वतःचे अन्न तयार करतात आणि ऑक्सिजन सोडतात.' },
+  };
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    const lang = t.dataset.lang;
+    gsap.to([langQ, langA], { opacity: 0, y: 6, duration: 0.18, onComplete: () => {
+      langQ.textContent = content[lang].q;
+      langA.textContent = content[lang].a;
+      gsap.to([langQ, langA], { opacity: 1, y: 0, duration: 0.3 });
+    } });
+  }));
+})();
+
+/* ── Voice waveform (level 5) ───────────────────────────────────────────── */
+(() => {
+  const waveform = document.getElementById('waveform');
+  for (let i = 0; i < 40; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'wave-bar';
+    bar.style.animationDelay = (i * 0.04) + 's';
+    bar.style.animationDuration = (0.7 + Math.random() * 0.6) + 's';
+    waveform.appendChild(bar);
+  }
+  const mic = document.getElementById('micContainer');
+  const transcript = document.getElementById('voiceTranscript');
+  const phrases = [
+    'फोटोसिंथेसिस म्हणजे काय?',
+    'Explain Newton\'s third law',
+    'त्रिकोणमिति की व्याख्या करें',
+    'What is the spiral model in software engineering?',
+  ];
+  let i = 0, listening = false;
+  mic.addEventListener('click', () => {
+    if (listening) return;
+    listening = true;
+    transcript.classList.add('live');
+    transcript.textContent = 'Listening…';
+    let p = phrases[i++ % phrases.length], shown = '';
+    let k = 0;
+    const typer = setInterval(() => {
+      shown += p[k++];
+      transcript.textContent = '"' + shown + '"';
+      if (k >= p.length) {
+        clearInterval(typer);
+        setTimeout(() => { transcript.classList.remove('live'); transcript.textContent = 'Tap the mic to ask another question…'; listening = false; }, 1800);
+      }
+    }, 55);
+  });
+})();
+
+/* ── Confetti ───────────────────────────────────────────────────────────── */
+function burstConfetti() {
+  const c = document.createElement('div');
+  c.className = 'confetti';
+  document.body.appendChild(c);
+  const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#fbbf24'];
+  for (let i = 0; i < 120; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = (Math.random() * 0.6) + 's';
+    piece.style.animationDuration = (2 + Math.random() * 1.6) + 's';
+    piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+    c.appendChild(piece);
+  }
+  setTimeout(() => c.remove(), 4500);
+}
+
+/* ── Auto-fire confetti when reaching the finish level ──────────────────── */
+ScrollTrigger.create({
+  trigger: '#level-8', start: 'top 50%',
+  once: true,
+  onEnter: () => { setTimeout(() => burstConfetti(), 300); audio.levelUp(); }
+});
+
+/* ── Refresh ScrollTrigger after fonts load to keep positions accurate ──── */
+window.addEventListener('load', () => ScrollTrigger.refresh());
+</script>
+</body>
+</html>
