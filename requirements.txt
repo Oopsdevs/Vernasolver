@@ -1,15 +1,10 @@
-# Versions aligned with the local environment that built db/ and was tested.
-# On Linux (Render), CPU torch installs from PyPI automatically.
-numpy>=1.26,<2
-torch>=2.2
-transformers>=4.44
-sentence-transformers>=3.0
-chromadb==1.5.9
 anthropic
 openai
+chromadb
+sentence-transformers
 PyMuPDF
 click
 python-dotenv
-fastapi>=0.95
+fastapi
 uvicorn[standard]
 python-multipart

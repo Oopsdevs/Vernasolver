@@ -6,551 +6,216 @@
   <title>VernaSolver — Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      /* ================= BOOKLIGHT DESIGN TOKENS v1.0 ================= */
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --purple: #8b5cf6;
+      --pink: #ec4899;
+      --amber: #f59e0b;
+      --green: #10b981;
+      --danger: #ef4444;
 
-      /* ---- Layout ---- */
-      --header-h: 56px;
-      --hud-h: 56px;                      /* compat: landing HUD */
-      --sidebar-w: 272px;
-      --content-max: 1120px;
-      --chat-max: 760px;
+      --bg: #0a0a18;
+      --bg-2: #14142b;
+      --sidebar-bg: #08081a;
+      --glass: rgba(255,255,255,.04);
+      --glass-strong: rgba(255,255,255,.06);
+      --border: rgba(255,255,255,.08);
+      --border-strong: rgba(255,255,255,.14);
 
-      /* ---- Z-index scale ---- */
-      --z-header: 100;
-      --z-mascot: 150;
-      --z-drawer: 200;
-      --z-modal: 300;
-      --z-toast: 400;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius: 12px;
 
-      /* ---- Typography ---- */
-      --font-ui: "Geist", "Noto Sans Devanagari", system-ui, -apple-system, "Segoe UI", sans-serif;
-      --font-display: "Bricolage Grotesque", "Noto Sans Devanagari", "Geist", system-ui, sans-serif;
-      --font-mono: "Geist Mono", "SFMono-Regular", Consolas, monospace;
-      --display: var(--font-display);     /* compat: was Space Grotesk */
-      --body-font: var(--font-ui);        /* compat: was Inter */
-      --arcade: var(--font-mono);         /* compat: Press Start 2P uses become mono microlabels */
-      --fs-hero: clamp(2.75rem, 6vw, 4.25rem);
-      --fs-h1: 2rem;
-      --fs-h2: 1.5rem;
-      --fs-h3: 1.125rem;
-      --fs-body: 0.9375rem;               /* 15px */
-      --fs-sm: 0.8125rem;                 /* 13px */
-      --fs-micro: 0.6875rem;              /* 11px — mono microlabels */
-      --lh-body: 1.65;
-      --tracking-display: -0.02em;        /* Bricolage headings */
-      --tracking-micro: 0.08em;           /* uppercase mono labels */
-
-      /* ---- Neutral ramp (blue-black, never pure black) ---- */
-      --bg-0: #05070d;                    /* page base */
-      --bg-1: #090c14;                    /* panels / sidebar */
-      --bg-2: #0d111c;                    /* raised surfaces / modals  (also legacy alias) */
-      --bg-3: #121726;                    /* highest surface / menus / toasts */
-      --bg: var(--bg-0);                  /* compat */
-      --sidebar-bg: var(--bg-1);          /* compat */
-      --chat-bg: transparent;             /* compat */
-
-      /* ---- Glass fills (blur ONLY on header / drawer / modal overlay) ---- */
-      --glass-1: rgba(255,255,255,.03);
-      --glass-2: rgba(255,255,255,.05);
-      --glass-3: rgba(255,255,255,.08);
-      --glass: var(--glass-1);            /* compat */
-      --glass-strong: var(--glass-3);     /* compat */
-      --blur-sm: 8px;
-      --blur-md: 16px;
-
-      /* ---- Borders & edges ---- */
-      --border-1: rgba(255,255,255,.06);
-      --border-2: rgba(255,255,255,.10);
-      --border-3: rgba(255,255,255,.16);
-      --border: var(--border-1);          /* compat */
-      --border-strong: var(--border-2);   /* compat */
-      --edge-top: inset 0 1px 0 rgba(255,255,255,.05);  /* inner top highlight on every card */
-      --tick: rgba(110,123,250,.40);      /* corner-tick strokes (instrument surfaces only) */
-
-      /* ---- Text (AA+ on bg-0/bg-1) ---- */
-      --text-1: #eef1f8;                  /* primary  ~16:1 */
-      --text-2: #a9b1c6;                  /* secondary ~9:1 */
-      --text-3: #7e88a3;                  /* meta/placeholder ~5.5:1 */
-      --text: var(--text-1);              /* compat */
-      --text-muted: var(--text-2);        /* compat */
-      --text-dim: var(--text-3);          /* compat */
-      --muted: var(--text-3);             /* compat: landing */
-
-      /* ---- Accent: the ONE aurora system ---- */
-      --accent-300: #b6c2ff;
-      --accent-400: #94a3fc;              /* links, icons, focus tint (8.2:1 on bg-0) */
-      --accent-500: #6e7bfa;              /* brand fill */
-      --accent-600: #5560e8;              /* pressed */
-      --primary: var(--accent-500);       /* compat */
-      --primary-dark: var(--accent-600);  /* compat */
-      --aurora-violet: #a78bfa;
-      --aurora-cyan: #38bdf8;
-      --accent: var(--aurora-violet);     /* compat: landing accent (was pink) */
-      --purple: var(--aurora-violet);     /* compat */
-      --pink: var(--aurora-violet);       /* compat: pink retired → violet */
-      --grad-aurora: linear-gradient(135deg, #6e7bfa 0%, #a78bfa 52%, #38bdf8 100%);
-      --grad-text: linear-gradient(100deg, #eef1f8 0%, #b6c2ff 55%, #8bd9f8 100%);
-      --grad-btn: linear-gradient(180deg, #6973f0 0%, #4e59dd 100%);
-      --grad-btn-hover: linear-gradient(180deg, #7681f6 0%, #5560e8 100%);
-      --hairline-aurora: linear-gradient(90deg, transparent, rgba(110,123,250,.6), rgba(167,139,250,.5), rgba(56,189,248,.4), transparent);
-
-      /* ---- Citation system (cyan is RESERVED for citations — nowhere else) ---- */
-      --cite: #67e8f9;                    /* ~13:1 on bg-0 */
-      --cite-bg: rgba(103,232,249,.08);
-      --cite-bg-hover: rgba(103,232,249,.14);
-      --cite-border: rgba(103,232,249,.22);
-      --cite-mark: rgba(103,232,249,.18); /* PDF highlight marks */
-      --teal: var(--cite);                /* compat */
-
-      /* ---- Semantic ---- */
-      --success: #4ade80;
-      --success-bg: rgba(74,222,128,.10);
-      --warn: #fbbf24;
-      --warn-bg: rgba(251,191,36,.08);
-      --danger: #f87171;
-      --danger-bg: rgba(248,113,113,.10);
-      --danger-border: rgba(248,113,113,.30);
-      --amber: var(--warn);               /* compat */
-      --green: var(--success);            /* compat */
-
-      /* ---- Subject dots (sidebar rows; hashed from subject name, in this order) ---- */
-      --subj-1: #8e96f9;  /* indigo */
-      --subj-2: #b794f6;  /* violet */
-      --subj-3: #f0a6c0;  /* rose */
-      --subj-4: #f5c97b;  /* amber */
-      --subj-5: #86e3a4;  /* green */
-
-      /* ---- Radii ---- */
-      --radius-xs: 6px;
-      --radius-sm: 8px;
-      --radius-md: 10px;
-      --radius-lg: 14px;
-      --radius-xl: 20px;
-      --radius-pill: 999px;
-      --radius: var(--radius-lg);         /* compat */
-
-      /* ---- Shadows (layered; colored glow only where stated) ---- */
-      --shadow-sm: 0 1px 2px rgba(3,5,10,.5);
-      --shadow-md: 0 1px 1px rgba(3,5,10,.4), 0 8px 24px -12px rgba(3,5,10,.8);
-      --shadow-lg: 0 16px 48px -16px rgba(3,5,10,.9);
-      --shadow-modal: 0 0 0 1px rgba(255,255,255,.07), 0 24px 80px -16px rgba(3,5,10,.95), 0 8px 28px rgba(3,5,10,.6);
-      --glow-accent: 0 4px 24px -6px rgba(110,123,250,.45); /* primary-btn hover + featured card ONLY */
-      --focus-ring: 0 0 0 2px var(--bg-0), 0 0 0 4px rgba(110,123,250,.8);
-
-      /* ---- Textures ---- */
-      --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%237e88a3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
-
-      /* ---- Motion ---- */
-      --ease-out: cubic-bezier(.16, 1, .3, 1);
-      --dur-1: 120ms;   /* hovers */
-      --dur-2: 200ms;   /* panels, modals, drawers */
-      --dur-3: 360ms;   /* section entrances */
+      --display: "Space Grotesk", system-ui, sans-serif;
+      --body-font: "Inter", system-ui, sans-serif;
+      --arcade: "Press Start 2P", monospace;
     }
-
-    /* ---- Admin page-specific extras (appended after tokens) ---- */
-    :root {
-      --empty-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 96' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg stroke='%237e88a3' stroke-width='1.5'%3E%3Crect x='20' y='38' width='13' height='46' rx='2'/%3E%3Cline x1='20' y1='46' x2='33' y2='46'/%3E%3Cline x1='20' y1='76' x2='33' y2='76'/%3E%3C/g%3E%3Cg stroke='%2394a3fc' stroke-width='1.5'%3E%3Crect x='36' y='32' width='13' height='52' rx='2'/%3E%3Cline x1='36' y1='40' x2='49' y2='40'/%3E%3Cline x1='36' y1='76' x2='49' y2='76'/%3E%3C/g%3E%3Cg stroke='%237e88a3' stroke-width='1.5' transform='rotate(12 62 84)'%3E%3Crect x='54' y='36' width='13' height='48' rx='2'/%3E%3Cline x1='54' y1='44' x2='67' y2='44'/%3E%3Cline x1='54' y1='76' x2='67' y2='76'/%3E%3C/g%3E%3Cline x1='14' y1='84.75' x2='82' y2='84.75' stroke='%237e88a3' stroke-opacity='.45' stroke-width='1.5'/%3E%3Cpath d='M44 28 C 52 16 68 13 82 15' stroke='%236e7bfa' stroke-opacity='.45' stroke-width='1' stroke-dasharray='4 2'/%3E%3Crect x='82' y='8' width='32' height='15' rx='7.5' stroke='%2367e8f9' stroke-opacity='.35' fill='%2367e8f9' fill-opacity='.08'/%3E%3Ctext x='98' y='18.5' text-anchor='middle' font-family='monospace' font-size='8' fill='%2367e8f9'%3Ep.12%3C/text%3E%3C/svg%3E");
-      --icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%234ade80' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6.25'/%3E%3Cpath d='m5.2 8.3 2 2 3.6-4.4'/%3E%3C/svg%3E");
-      --icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23f87171' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2.5 14.4 13.2H1.6Z'/%3E%3Cline x1='8' y1='6.7' x2='8' y2='9.6'/%3E%3Ccircle cx='8' cy='11.4' r='.4' fill='%23f87171' stroke='none'/%3E%3C/svg%3E");
-    }
-
-    html { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
 
     body {
-      font-family: var(--font-ui);
-      font-size: var(--fs-body);
-      line-height: var(--lh-body);
-      color: var(--text-1);
-      background: var(--bg-0);
+      font-family: var(--body-font); color: var(--text);
+      background:
+        radial-gradient(ellipse 1200px 600px at 20% 10%, rgba(99,102,241,.10), transparent 60%),
+        radial-gradient(ellipse 900px 500px at 80% 90%, rgba(236,72,153,.08), transparent 60%),
+        linear-gradient(180deg, var(--bg), var(--bg-2));
+      background-attachment: fixed;
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* S3 — aurora wash (static on admin), behind everything */
-    body::before {
-      content: ""; position: fixed; inset: 0;
-      pointer-events: none; z-index: 0;
-      background:
-        radial-gradient(900px 600px at 70% -10%, rgba(110,123,250,.10), transparent 65%),
-        radial-gradient(700px 500px at 20% 0%, rgba(56,189,248,.05), transparent 60%);
-    }
-    /* S2 — grain overlay */
-    body::after {
-      content: ""; position: fixed; inset: 0;
-      pointer-events: none; z-index: 1;
-      background-image: var(--grain);
-    }
-
-    ::selection { background: rgba(110,123,250,.35); }
-
     /* ── Header ──────────────────────────────────────────────────────────── */
     header {
-      position: fixed; top: 0; left: 0; right: 0;
-      height: var(--header-h); z-index: var(--z-header);
-      display: flex; align-items: center; gap: 12px;
-      padding: 0 20px;
-      background: rgba(9,12,20,.72);
-      backdrop-filter: blur(16px) saturate(140%);
-      -webkit-backdrop-filter: blur(16px) saturate(140%);
-      border-bottom: 1px solid var(--border-1);
+      height: 58px; background: rgba(8, 8, 26, .72); backdrop-filter: blur(18px);
+      display: flex; align-items: center; padding: 0 24px; gap: 14px;
+      border-bottom: 1px solid var(--border);
     }
-    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-    .brand .orb { flex-shrink: 0; display: block; }
-    .orb-ring { animation: orb-breathe 3s ease-in-out infinite; }
-    @keyframes orb-breathe { 0%, 100% { opacity: .85; } 50% { opacity: 1; } }
-    .wordmark {
-      font-family: var(--font-ui); font-size: 15px; font-weight: 600;
-      letter-spacing: -0.01em; color: var(--text-1); white-space: nowrap;
-    }
-    .brand-scope {
-      font-family: var(--font-mono); font-size: var(--fs-micro); font-weight: 500;
-      line-height: 1; letter-spacing: var(--tracking-micro); text-transform: uppercase;
-      color: var(--text-3);
-      padding: 4px 8px; border: 1px solid var(--border-1);
-      border-radius: var(--radius-pill); background: var(--glass-1);
-      white-space: nowrap;
-    }
-    .btn-quiet {
-      margin-left: auto;
-      display: inline-flex; align-items: center;
-      height: 32px; padding: 0 12px;
-      font-family: var(--font-ui); font-size: 13px; font-weight: 500;
-      color: var(--text-2); text-decoration: none;
-      border-radius: var(--radius-sm);
-      transition: color var(--dur-1), background var(--dur-1);
-    }
-    .btn-quiet:hover { color: var(--text-1); background: var(--glass-2); }
-
-    /* ── Page column ─────────────────────────────────────────────────────── */
-    .page {
-      position: relative; z-index: 2;
-      max-width: 720px; margin: 0 auto;
-      padding: calc(var(--header-h) + 40px) 22px 72px;
-      display: flex; flex-direction: column; gap: 28px;
-    }
-
-    /* ── Microlabels (the Press Start 2P replacement) ────────────────────── */
-    .page-kicker, .card-kicker, .field label, .subject-label, #statusBox::before {
-      font-family: var(--font-mono);
-      font-size: var(--fs-micro); font-weight: 500; line-height: 1;
-      letter-spacing: var(--tracking-micro); text-transform: uppercase;
-      color: var(--text-3);
-    }
-
-    /* ── Page head (D5) ──────────────────────────────────────────────────── */
-    .page-kicker { color: var(--accent-400); margin-bottom: 10px; }
-    h1 {
-      font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 700;
-      letter-spacing: var(--tracking-display); line-height: 1.15;
-      color: var(--text-1);
-    }
-    .h1-grad {
-      background: var(--grad-text);
+    .logo {
+      font-family: var(--arcade); font-size: 0.78rem; letter-spacing: 1.5px;
+      background: linear-gradient(135deg, #fff, var(--primary) 70%, var(--pink));
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
-    .head-rule { height: 1px; margin-top: 18px; background: var(--hairline-aurora); }
-
-    /* ── Cards ───────────────────────────────────────────────────────────── */
-    .card {
-      position: relative;
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border: 1px solid var(--border-1);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-md), var(--edge-top);
-      padding: 24px;
+    .logo span { color: var(--pink); -webkit-background-clip: initial; background-clip: initial; }
+    header > a {
+      margin-left: auto;
+      color: var(--text-muted); font-size: 0.82rem; text-decoration: none;
+      padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px;
+      transition: all .15s; font-weight: 500; background: rgba(255,255,255,.02);
     }
-    .card-head { margin-bottom: 18px; }
-    .card-kicker { display: block; margin-bottom: 6px; }
+    header > a:hover { color: #fff; border-color: var(--primary); background: rgba(99,102,241,.1); box-shadow: 0 4px 14px rgba(99,102,241,.25); }
+
+    /* ── Page ──────────────────────────────────────────────────────────── */
+    .page { max-width: 800px; margin: 0 auto; padding: 36px 22px 60px; display: flex; flex-direction: column; gap: 30px; }
+
+    h1 {
+      font-family: var(--display); font-size: 1.6rem; font-weight: 700;
+      background: linear-gradient(135deg, #fff, var(--primary) 80%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      letter-spacing: -.02em;
+    }
     h2 {
-      font-family: var(--font-ui); font-size: 18px; font-weight: 600;
-      color: var(--text-1); letter-spacing: -0.01em;
+      font-family: var(--display); font-size: 1.05rem; font-weight: 600;
+      color: #fff; margin-bottom: 16px;
     }
 
-    /* ── Drop zone (D1 + corner ticks) ───────────────────────────────────── */
+    /* ── Card ──────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--glass-strong);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 26px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.25);
+    }
+
+    /* ── Drop zone ──────────────────────────────────────────────────────── */
     #dropzone {
-      position: relative;
-      border: 1.5px dashed var(--border-2);
-      border-radius: var(--radius-lg);
-      padding: 30px 24px 26px;
-      text-align: center; cursor: pointer;
-      background: transparent;
-      color: var(--text-3); /* drives currentColor strokes in .dz-art */
-      transition: border-color var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
+      border: 2px dashed var(--border-strong); border-radius: var(--radius); padding: 36px;
+      text-align: center; cursor: pointer; transition: all .2s;
+      background: rgba(255,255,255,.02);
     }
-    #dropzone::before, #dropzone::after {
-      content: ""; position: absolute; width: 12px; height: 12px; pointer-events: none;
-    }
-    #dropzone::before { top: -1px; left: -1px; border-top: 1.5px solid var(--tick); border-left: 1.5px solid var(--tick); }
-    #dropzone::after { bottom: -1px; right: -1px; border-bottom: 1.5px solid var(--tick); border-right: 1.5px solid var(--tick); }
     #dropzone.drag-over {
-      border-color: var(--accent-400);
-      background: rgba(110,123,250,.06);
-      color: var(--accent-400);
+      border-color: var(--primary);
+      background: rgba(99,102,241,.08);
+      box-shadow: 0 0 0 4px rgba(99,102,241,.12), inset 0 0 40px rgba(99,102,241,.08);
     }
-    .dz-art { display: block; margin: 0 auto 12px; }
-    #dropzone p { color: var(--text-2); font-size: var(--fs-sm); }
-    #dropzone p strong { color: var(--accent-400); font-weight: 600; cursor: pointer; }
+    #dropzone .icon { font-size: 2.8rem; margin-bottom: 10px; filter: drop-shadow(0 4px 14px rgba(99,102,241,.4)); }
+    #dropzone p { color: var(--text-muted); font-size: 0.875rem; }
+    #dropzone p strong {
+      background: linear-gradient(135deg, var(--primary), var(--pink));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      cursor: pointer; font-weight: 700;
+    }
     #fileInput { display: none; }
-    #fileName {
-      margin-top: 10px;
-      font-family: var(--font-mono); font-size: 12px; font-weight: 500;
-      color: var(--text-1); word-break: break-all;
-    }
-    #fileName:empty { display: none; }
+    #fileName { margin-top: 12px; font-size: 0.85rem; color: #fff; font-weight: 500; }
 
-    /* ── Form fields ─────────────────────────────────────────────────────── */
+    /* ── Form fields ──────────────────────────────────────────────────── */
     .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
     .field { display: flex; flex-direction: column; gap: 6px; }
     .field.full { grid-column: 1 / -1; }
+    .field label {
+      font-family: var(--arcade); font-size: 0.55rem; letter-spacing: .12em;
+      color: var(--text-dim); text-transform: uppercase;
+    }
     .field input {
-      height: 38px;
-      background: rgba(5,7,13,.6);
-      border: 1px solid var(--border-2);
-      border-radius: var(--radius-md);
-      padding: 0 12px;
-      font-family: var(--font-ui); font-size: 14px; color: var(--text-1);
-      outline: none;
-      transition: border-color var(--dur-1), box-shadow var(--dur-1);
+      background: var(--glass); color: var(--text);
+      border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 10px 14px; font-size: 0.9rem; font-family: var(--body-font);
+      outline: none; transition: all .2s;
     }
-    .field input::placeholder { color: var(--text-3); }
-    .field input:focus {
-      border-color: rgba(110,123,250,.6);
-      box-shadow: 0 0 0 3px rgba(110,123,250,.18);
-    }
+    .field input::placeholder { color: var(--text-dim); }
+    .field input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.2); background: rgba(99,102,241,.06); }
 
-    /* ── Submit (Primary button) ─────────────────────────────────────────── */
+    /* ── Submit ────────────────────────────────────────────────────────── */
     #submitBtn {
-      margin-top: 20px; width: 100%; height: 36px; padding: 0 16px;
-      display: inline-flex; align-items: center; justify-content: center;
-      border-radius: var(--radius-md);
-      background: var(--grad-btn);
-      border: 1px solid rgba(255,255,255,.14);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 1px 2px rgba(3,5,10,.5);
-      color: #fff;
-      font-family: var(--font-ui); font-size: 14px; line-height: 1; font-weight: 600;
-      cursor: pointer;
-      transition: background var(--dur-1), box-shadow var(--dur-1), filter var(--dur-1);
+      margin-top: 22px; width: 100%; padding: 13px;
+      background: linear-gradient(135deg, var(--primary), var(--purple), var(--pink));
+      color: #fff; border: none; border-radius: 12px;
+      font-family: var(--body-font); font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+      box-shadow: 0 6px 20px rgba(99,102,241,.4);
     }
-    #submitBtn:hover:not(:disabled) {
-      background: var(--grad-btn-hover);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 1px 2px rgba(3,5,10,.5), var(--glow-accent);
+    #submitBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(236,72,153,.5); }
+    #submitBtn:disabled {
+      background: linear-gradient(135deg, rgba(99,102,241,.35), rgba(236,72,153,.25));
+      opacity: .5; cursor: not-allowed; box-shadow: none;
     }
-    #submitBtn:active:not(:disabled) { filter: brightness(.92); transform: translateY(1px); }
-    #submitBtn:disabled { opacity: .45; box-shadow: none; pointer-events: none; }
 
-    /* ── Status box (D2 scan bar + tinted info card) ─────────────────────── */
+    /* ── Progress / status ─────────────────────────────────────────────── */
     #statusBox {
-      display: none; position: relative;
-      margin-top: 16px;
-      padding: 12px 16px 30px;
-      border-radius: var(--radius-md);
-      font-size: var(--fs-sm); color: var(--text-1);
+      display: none; margin-top: 16px; padding: 13px 16px;
+      border-radius: 10px; font-size: 0.875rem;
+      backdrop-filter: blur(8px);
     }
-    #statusBox.running { background: rgba(110,123,250,.07); border-left: 2px solid var(--accent-500); }
-    #statusBox.done    { background: var(--success-bg); border-left: 2px solid var(--success); }
-    #statusBox.error   { background: var(--danger-bg); border-left: 2px solid var(--danger); }
-
-    #statusBox::before { display: block; margin-bottom: 8px; }
-    #statusBox.running::before { content: "Ingesting"; color: var(--accent-400); }
-    #statusBox.done::before {
-      content: "Ingest complete"; color: var(--success);
-      padding-left: 22px;
-      background: var(--icon-check) left center / 14px 14px no-repeat;
-      animation: pop var(--dur-2) var(--ease-out);
-    }
-    #statusBox.error::before {
-      content: "Ingest failed"; color: var(--danger);
-      padding-left: 22px;
-      background: var(--icon-alert) left center / 14px 14px no-repeat;
-    }
-    @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-    /* track + traveling aurora segment / state fills */
-    #statusBox.running::after, #statusBox.done::after, #statusBox.error::after {
-      content: ""; position: absolute;
-      left: 16px; right: 16px; bottom: 12px; height: 6px;
-      border-radius: var(--radius-pill);
-    }
-    #statusBox.running::after {
-      background-color: var(--glass-2);
-      background-image: var(--grad-aurora);
-      background-size: 40% 100%; background-repeat: no-repeat;
-      animation: scan 1.4s linear infinite;
-    }
-    #statusBox.done::after { background: var(--success); }
-    #statusBox.error::after { background: var(--danger); }
-    @keyframes scan { from { background-position: -80% 0; } to { background-position: 180% 0; } }
+    #statusBox.running { background: rgba(99,102,241,.10); color: #c7d2fe; border: 1px solid rgba(99,102,241,.35); }
+    #statusBox.done    { background: rgba(16,185,129,.10); color: #6ee7b7; border: 1px solid rgba(16,185,129,.35); }
+    #statusBox.error   { background: rgba(239,68,68,.10); color: #fca5a5; border: 1px solid rgba(239,68,68,.35); }
 
     .spinner {
       display: inline-block; width: 14px; height: 14px;
-      border: 2px solid rgba(148,163,252,.3); border-top-color: var(--accent-400);
-      border-radius: 50%; animation: spin .8s linear infinite;
+      border: 2px solid currentColor; border-top-color: transparent;
+      border-radius: 50%; animation: spin .7s linear infinite;
       margin-right: 8px; vertical-align: -2px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Book list ───────────────────────────────────────────────────────── */
-    .subject-group { margin-bottom: 20px; }
-    .subject-group:last-child { margin-bottom: 0; }
+    /* ── Book list ───────────────────────────────────────────────────── */
+    .subject-group { margin-bottom: 22px; }
     .subject-label {
-      display: flex; align-items: center; gap: 8px;
-      padding: 0 8px; margin-bottom: 4px;
+      font-family: var(--arcade); font-size: 0.55rem; letter-spacing: .15em;
+      color: var(--amber); margin-bottom: 10px; text-transform: uppercase;
     }
-    .subject-label::before {
-      content: ""; width: 6px; height: 6px; border-radius: 50%;
-      background: var(--subj-1); flex-shrink: 0;
-    }
-    .subject-group:nth-of-type(5n+2) .subject-label::before { background: var(--subj-2); }
-    .subject-group:nth-of-type(5n+3) .subject-label::before { background: var(--subj-3); }
-    .subject-group:nth-of-type(5n+4) .subject-label::before { background: var(--subj-4); }
-    .subject-group:nth-of-type(5n)   .subject-label::before { background: var(--subj-5); }
-
     .book-row {
       display: flex; align-items: center; gap: 14px;
-      min-height: 48px; padding: 8px;
-      border-bottom: 1px solid var(--border-1);
-      border-radius: var(--radius-sm);
-      transition: background var(--dur-1);
+      padding: 14px 16px; background: var(--glass); border: 1px solid var(--border);
+      border-radius: 11px; margin-bottom: 8px; transition: all .2s;
     }
-    .book-row:last-child { border-bottom: none; }
-    .book-row:hover { background: var(--glass-1); }
+    .book-row:hover { border-color: rgba(99,102,241,.4); background: rgba(99,102,241,.05); }
     .book-info { flex: 1; min-width: 0; }
-    .book-title {
-      font-size: 14px; font-weight: 500; color: var(--text-1);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .book-meta {
-      display: inline;
-      font-family: var(--font-mono); font-size: 12px; line-height: 1.6;
-      color: var(--text-3);
-    }
-    .book-id {
-      display: inline;
-      font-family: var(--font-mono); font-size: 11px; line-height: 1.6;
-      color: var(--text-3); opacity: .75;
-    }
-    .book-id::before { content: "·"; margin: 0 6px 0 4px; }
+    .book-title { font-size: 0.92rem; font-weight: 600; color: #fff; }
+    .book-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; }
+    .book-id { font-size: 0.7rem; color: var(--text-dim); font-family: "SF Mono", Consolas, monospace; margin-top: 4px; }
 
     .btn-delete {
+      padding: 7px 14px; background: transparent; color: #fca5a5;
+      border: 1px solid rgba(239,68,68,.35); border-radius: 8px;
+      font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all .15s;
       flex-shrink: 0;
-      height: 28px; padding: 0 10px;
-      background: transparent; color: var(--danger);
-      border: 1px solid var(--danger-border);
-      border-radius: var(--radius-sm);
-      font-family: var(--font-ui); font-size: 12px; line-height: 1; font-weight: 500;
-      cursor: pointer;
-      transition: background var(--dur-1), border-color var(--dur-1);
     }
-    .btn-delete:hover { background: var(--danger-bg); border-color: rgba(248,113,113,.5); }
+    .btn-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); box-shadow: 0 4px 14px rgba(239,68,68,.4); }
 
-    /* ── Empty state (D3) ────────────────────────────────────────────────── */
-    .empty-msg { text-align: center; padding: 32px 20px 36px; color: var(--text-3); font-size: var(--fs-sm); }
-    .empty-msg::before {
-      content: ""; display: block;
-      width: 120px; height: 96px; margin: 0 auto 14px;
-      background: var(--empty-art) center / contain no-repeat;
-    }
-    .empty-msg a { color: var(--accent-400); }
+    .empty-msg { text-align: center; padding: 36px; color: var(--text-muted); font-size: 0.875rem; }
+    .empty-msg a { color: var(--primary); }
 
-    /* ── Focus visibility ────────────────────────────────────────────────── */
-    a:focus-visible, button:focus-visible, #dropzone:focus-visible {
-      outline: none;
-      box-shadow: var(--focus-ring);
-    }
-
-    /* ── Scrollbars ──────────────────────────────────────────────────────── */
-    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,.12);
-      border: 3px solid transparent; background-clip: content-box;
-      border-radius: var(--radius-pill);
-    }
-    ::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,.2); }
-
-    /* ── Responsive ──────────────────────────────────────────────────────── */
-    @media (max-width: 768px) {
-      .page { padding-left: 16px; padding-right: 16px; }
-      .card { padding: 20px; }
-      .fields { grid-template-columns: 1fr; }
-      .brand-scope { display: none; }
-      #dropzone { padding: 24px 16px 22px; }
-    }
-
-    /* ── Reduced motion ──────────────────────────────────────────────────── */
-    @media (prefers-reduced-motion: reduce) {
-      .orb-ring { animation: none; }
-      #statusBox.running::after {
-        animation: none;
-        background-image: none;
-        background-color: rgba(110,123,250,.45);
-      }
-      #statusBox.done::before { animation: none; }
-      #submitBtn:active:not(:disabled) { transform: none; }
-      /* .spinner keeps rotating per spec */
-    }
+    ::-webkit-scrollbar-thumb { background: rgba(99,102,241,.25); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,.45); }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="brand">
-    <!-- S1 — Verna orb -->
-    <svg class="orb" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="orb-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stop-color="#6e7bfa"/>
-          <stop offset="0.55" stop-color="#a78bfa"/>
-          <stop offset="1" stop-color="#38bdf8"/>
-        </linearGradient>
-      </defs>
-      <circle class="orb-ring" cx="12" cy="12" r="10.25" stroke="url(#orb-grad)" stroke-width="1.5"/>
-      <path d="M8.2 8.6 12 15.4l3.8-6.8" stroke="var(--text-1)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    <span class="wordmark">VernaSolver</span>
-    <span class="brand-scope">Admin</span>
-  </div>
-  <a href="/app" class="btn-quiet">← Back to Chat</a>
+  <div class="logo">VERNA<span>SOLVER</span> — Admin</div>
+  <a href="/app">← Back to Chat</a>
 </header>
 
 <div class="page">
-  <!-- ── Page head (D5) ── -->
-  <div class="page-head">
-    <div class="page-kicker">Admin / Library</div>
-    <h1><span class="h1-grad">Book</span> Management</h1>
-    <div class="head-rule" aria-hidden="true"></div>
+  <div>
+    <h1>Book Management</h1>
   </div>
 
   <!-- ── Upload card ── -->
-  <section class="card">
-    <div class="card-head">
-      <div class="card-kicker">Upload</div>
-      <h2>Add a book</h2>
-    </div>
+  <div class="card">
+    <h2>Add a Book</h2>
 
-    <div id="dropzone" tabindex="0" role="button" aria-label="Choose a PDF or drag and drop it here">
-      <!-- D1 — document sheet + upward arrow, thread of provenance -->
-      <svg class="dz-art" width="96" height="64" viewBox="0 0 96 64" fill="none" aria-hidden="true">
-        <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M26 6h24l12 12v40H26z"/>
-          <path d="M50 6v12h12"/>
-          <line x1="34" y1="28" x2="52" y2="28"/>
-          <line x1="34" y1="36" x2="56" y2="36"/>
-          <line x1="34" y1="44" x2="47" y2="44"/>
-        </g>
-        <path d="M56 36 C 66 36 71 32 76 27" stroke="var(--tick)" stroke-width="1" stroke-dasharray="4 2" stroke-linecap="round"/>
-        <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M76 48V26"/>
-          <path d="m68.5 33.5 7.5-7.5 7.5 7.5"/>
-        </g>
-      </svg>
-      <p><strong>Choose a PDF</strong> or drag it here</p>
+    <div id="dropzone">
+      <div class="icon">📄</div>
+      <p><strong>Click to choose a PDF</strong> or drag and drop here</p>
       <div id="fileName"></div>
       <input type="file" id="fileInput" accept=".pdf" />
     </div>
@@ -570,18 +235,15 @@
       </div>
     </div>
 
-    <button id="submitBtn" disabled>Ingest book</button>
+    <button id="submitBtn" disabled>Ingest Book</button>
     <div id="statusBox"></div>
-  </section>
+  </div>
 
   <!-- ── Book list card ── -->
-  <section class="card">
-    <div class="card-head">
-      <div class="card-kicker">Library</div>
-      <h2>Ingested books</h2>
-    </div>
-    <div id="bookList"><p class="empty-msg">Loading…</p></div>
-  </section>
+  <div class="card">
+    <h2>Ingested Books</h2>
+    <div id="bookList"><p class="empty-msg">Loading...</p></div>
+  </div>
 </div>
 
 <script>

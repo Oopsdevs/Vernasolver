@@ -3,11 +3,9 @@
 .env.local
 .env.*.local
 
-# ── Ingested data ───────────────────────────────────────────────────────────
-# NOTE: books/ and db/ are intentionally committed so they deploy to Render
-# (the free tier has ephemeral disk — anything not in the repo is lost on restart).
-# Only the per-user accounts DB and rendered page-image cache stay out of git.
-db/users.db
+# ── Ingested data (regenerated on demand, not for version control) ──────────
+books/
+db/
 static/book_images/
 
 # ── Python ──────────────────────────────────────────────────────────────────
