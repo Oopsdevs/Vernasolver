@@ -1,6 +1,11 @@
 import os
 import re
 
+# ── Model selection ───────────────────────────────────────────────────────────
+# Set CLAUDE_MODEL in your .env to switch models without touching code.
+# Opus = highest quality; Sonnet = faster/cheaper. Defaults to Opus.
+CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "").strip() or "claude-opus-4-8"
+
 # ── Small-talk detector ──────────────────────────────────────────────────────
 _SMALL_TALK_RE = re.compile(
     r"^\s*("
@@ -107,9 +112,18 @@ Rules:
 
 def _structured(prompt: str, context: str, question_hint: str = "") -> str:
     """Run a one-shot non-streaming call returning the raw model output (expected to be JSON)."""
-    user_content = f"BOOK EXCERPTS:\n{context}\n\nTOPIC FOCUS: {question_hint or '(general — pick the most central themes)'}"
+    user_content = (
+        f"BOOK EXCERPTS:\n{context}\n\n"
+        f"TOPIC FOCUS: {question_hint or '(general — pick the most central themes)'}\n\n"
+        "Respond with ONLY the JSON object specified in your instructions. "
+        "No preamble, no explanation, no markdown fences — your reply must start with '{' and end with '}'."
+    )
     # Streaming → reliably returns text on the proxy, even when create() sometimes returns empty.
-    messages = [{"role": "user", "content": user_content}]
+    # Prefill the assistant turn with "{" so the model is forced to emit JSON, not prose.
+    messages = [
+        {"role": "user", "content": user_content},
+        {"role": "assistant", "content": "{"},
+    ]
 
     anthropic_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
     if anthropic_key:
@@ -119,7 +133,7 @@ def _structured(prompt: str, context: str, question_hint: str = "") -> str:
             client = anthropic.Anthropic(api_key=anthropic_key, base_url=base_url)
             parts: list[str] = []
             with client.messages.stream(
-                model="claude-sonnet-4-6",
+                model=CLAUDE_MODEL,
                 max_tokens=2048,
                 system=prompt,
                 messages=messages,
@@ -128,7 +142,8 @@ def _structured(prompt: str, context: str, question_hint: str = "") -> str:
                     parts.append(text)
             result = "".join(parts).strip()
             if result:
-                return result
+                # Re-attach the prefilled "{" the model continued from.
+                return result if result.startswith("{") else "{" + result
             print("[Claude structured-call returned empty — falling back to OpenAI]")
         except Exception as e:
             print(f"[Claude structured-call error: {e} — trying OpenAI...]")
@@ -139,7 +154,11 @@ def _structured(prompt: str, context: str, question_hint: str = "") -> str:
         client = OpenAI(api_key=openai_key)
         resp = client.chat.completions.create(
             model="gpt-4o-mini", max_tokens=2048,
-            messages=[{"role": "system", "content": prompt}] + messages,
+            # OpenAI doesn't support assistant-prefill continuation; send only the user turn.
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": user_content},
+            ],
             response_format={"type": "json_object"},
         )
         return resp.choices[0].message.content or ""
@@ -189,7 +208,7 @@ def get_answer(context: str, question: str, history: list[dict] | None = None) -
     anthropic_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
     if anthropic_key:
         try:
-            return _claude(context, question, history, anthropic_key), "Claude (claude-sonnet-4-6)"
+            return _claude(context, question, history, anthropic_key), f"Claude ({CLAUDE_MODEL})"
         except Exception as e:
             print(f"[Claude error: {e} — trying OpenAI...]")
 
@@ -207,7 +226,7 @@ def get_answer(context: str, question: str, history: list[dict] | None = None) -
 
 def determine_model() -> str:
     if os.getenv("ANTHROPIC_API_KEY", "").strip():
-        return "Claude (claude-sonnet-4-6)"
+        return f"Claude ({CLAUDE_MODEL})"
     if os.getenv("OPENAI_API_KEY", "").strip():
         return "GPT-4o-mini (fallback)"
     return "N/A"
@@ -244,7 +263,7 @@ def _claude_stream(messages: list[dict], api_key: str, system: str = None):
     base_url = os.getenv("ANTHROPIC_BASE_URL", "").strip() or None
     client = anthropic.Anthropic(api_key=api_key, base_url=base_url)
     with client.messages.stream(
-        model="claude-sonnet-4-6",
+        model=CLAUDE_MODEL,
         max_tokens=1024,
         system=system or SYSTEM_PROMPT,
         messages=messages,
@@ -294,7 +313,7 @@ def _claude(context: str, question: str, history: list[dict], api_key: str) -> s
     base_url = os.getenv("ANTHROPIC_BASE_URL", "").strip() or None
     client = anthropic.Anthropic(api_key=api_key, base_url=base_url)
     message = client.messages.create(
-        model="claude-sonnet-4-6",
+        model=CLAUDE_MODEL,
         max_tokens=1024,
         system=SYSTEM_PROMPT,
         messages=messages,

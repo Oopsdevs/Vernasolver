@@ -3,9 +3,11 @@
 .env.local
 .env.*.local
 
-# ── Ingested data (regenerated on demand, not for version control) ──────────
-books/
-db/
+# ── Ingested data ───────────────────────────────────────────────────────────
+# books/ and db/ are committed ON PURPOSE so a fresh clone on any device already
+# has the ingested books + vector DB — no need to re-ingest. Only the per-user
+# accounts DB and the rendered page-image cache stay out of git.
+db/users.db
 static/book_images/
 
 # ── Python ──────────────────────────────────────────────────────────────────

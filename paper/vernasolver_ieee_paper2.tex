@@ -1,0 +1,367 @@
+%=======================================================================
+%  VernaSolver — IEEE Journal / Transactions style RESEARCH PAPER
+%  How to use in Overleaf:
+%    1. Create a new blank project.
+%    2. Paste this whole file into main.tex.
+%    3. Menu (top-left) → Settings → Compiler → pdfLaTeX.
+%    4. Click "Recompile". IEEEtran is built into Overleaf.
+%  This uses the [journal] mode of IEEEtran — the standard IEEE
+%  research-paper (Transactions) format, not the conference format.
+%  Layout, spacing and alignment are handled by the class — do not
+%  change the page geometry.
+%=======================================================================
+\documentclass[journal]{IEEEtran}
+
+% --- Packages ---------------------------------------------------------
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+% =====================================================================
+%  TITLE
+% =====================================================================
+\title{A Textbook-Grounded Question Answering System with Page-Level
+Citations and Multilingual Support for Students}
+
+% ---------------------------------------------------------------------
+%  AUTHORS  (IEEE journal/Transactions style — flat author line)
+% ---------------------------------------------------------------------
+\author{Pritam~Bairagi,~Shwetaki~Killedar,~and~Preksha~Pokharna%
+\thanks{The authors are with the Department of Computer Science and
+Engineering, MIT Art, Design and Technology University, Pune, India.}%
+\thanks{Enrollment numbers: P. Bairagi (ADT24SOCB0846),
+S. Killedar (ADT24SOCB1158), P. Pokharna (ADT24SOCB0839).}}
+
+% Running headers for the journal style
+\markboth{VernaSolver: Textbook-Grounded Question Answering with
+Page-Level Citations}{Bairagi \MakeLowercase{\textit{et al.}}: A
+Textbook-Grounded Question Answering System for Students}
+
+\maketitle
+
+% =====================================================================
+%  ABSTRACT
+% =====================================================================
+\begin{abstract}
+Students often use AI chat tools to study, but these tools answer from
+general training data and not from the book a student is actually
+following. This can lead to answers that do not match the course book,
+page numbers that are not real, and weak support for languages like
+Hindi and Marathi. This paper describes \textit{VernaSolver}, a system
+that takes a student's own textbook and answers questions only from it,
+giving the page number for each answer so the student can check it. The
+book is uploaded as a PDF, split into small parts, and stored in a
+searchable form. For each question, the system picks the most useful
+parts of the book, orders them with a second model, and asks an AI model
+to write the answer using only those parts. When the book does not
+contain the answer, the system says so rather than making one up. The
+tool can search one book or a whole subject, reply in English, Hindi, or
+Marathi, and build short quizzes and flashcards from the book. We present
+the design, the steps that keep answers tied to the source, and the
+results from a working version tested on real course books.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Question Answering, Retrieval-Augmented Generation, Vector Search,
+Textbook Study Tool, Page Citation, Multilingual, Education.
+\end{IEEEkeywords}
+
+\IEEEpeerreviewmaketitle
+
+% =====================================================================
+%  I. INTRODUCTION
+% =====================================================================
+\section{Introduction}
+AI chat tools have become a common way for students to get quick help.
+They can explain ideas and answer questions on many topics. The trouble
+starts when a student has to learn from one set book for a course or an
+exam. A normal chat tool does not read that book. It answers from the
+large data it was trained on, so its reply may not match the book, the
+page it mentions may not exist, and it may go outside the syllabus. When
+an exam is based on a fixed book, an answer the student cannot check is
+not of much use.
+
+Language adds another gap. Many students in India are more comfortable in
+Hindi or Marathi, but most chat tools are tuned for English. So a student
+may get an answer that is both hard to verify and in the wrong language.
+
+We built \textbf{VernaSolver} to deal with both problems. The rule it
+follows is plain: answer only from the student's book, and always show
+where the answer came from. To do this it uses Retrieval-Augmented
+Generation (RAG)~\cite{lewis2020rag}, where the system first looks up the
+right parts of the book and then asks the AI model to answer from those
+parts only, with the page number shown for each one.
+
+This paper makes the following points:
+\begin{itemize}
+\item It describes a study tool that answers only from a chosen book and
+gives a page number that the student can check.
+\item It explains a search step that finds parts by meaning and then
+re-orders them with a second model for better accuracy, and rewrites
+follow-up questions so longer chats work.
+\item It shows a low-cost setup where the search runs on a normal
+computer and the AI model is used only to write the final answer, with a
+backup model if the main one is down.
+\item It adds useful study features: subject-wide search, replies in
+three languages, and automatic quizzes and flashcards, through both a
+command-line tool and a web app.
+\end{itemize}
+
+% =====================================================================
+%  II. RELATED WORK
+% =====================================================================
+\section{Related Work}
+\textbf{Grounding answers in a source.} Lewis \textit{et
+al.}~\cite{lewis2020rag} proposed RAG, where a generation model is paired
+with a search step over an outside source so it does not rely only on
+memory. This has been shown to cut down made-up answers and to make it
+easier to point back to the source.
+
+\textbf{Meaning-based search.} Older search compared exact words. Dense
+passage retrieval~\cite{karpukhin2020dpr} instead compares meaning, which
+finds the right text even when the words differ. Sentence-BERT
+~\cite{reimers2019sbert} made it quick to turn short text into numbers for
+this kind of comparison. A second model, a cross-encoder, can re-check
+the shortlisted text against the question to keep only the best matches.
+
+\textbf{Using AI models to write answers.} Current AI models read given
+text and answer from it quite well. But unless they are clearly told to
+use only that text, they tend to add their own knowledge. For exam study
+this is a problem, because only the set book should be used.
+
+VernaSolver stands apart in three ways: the page number is always shown
+to the student, the system refuses when the book lacks the answer, and it
+is built for one-book study in more than one language on ordinary
+hardware.
+
+% =====================================================================
+%  III. EXISTING VS PROPOSED SYSTEM
+% =====================================================================
+\section{Existing and Proposed System}
+Table~\ref{tab:compare} compares a normal AI chat tool with VernaSolver.
+A normal tool is general and easy to use, but it cannot promise that an
+answer is from the student's book, and it often cannot be checked.
+VernaSolver trades some generality for trust: it only works on books that
+have been added, but every answer it gives can be traced to a page in
+those books.
+
+\begin{table}[!t]
+\caption{Normal Chat Tool vs. VernaSolver}
+\label{tab:compare}
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{2.5cm}p{2.4cm}p{2.4cm}@{}}
+\toprule
+\textbf{Point} & \textbf{Normal Chat Tool} & \textbf{VernaSolver} \\
+\midrule
+Source of answer & Training data & The student's book \\
+Page number      & Often wrong/missing & Shown and real \\
+Made-up answers  & Common & Avoided; says ``not found'' \\
+Syllabus match   & None & Limited to chosen book \\
+Languages        & Mostly English & English, Hindi, Marathi \\
+Study aids       & General & Quiz/flashcards from book \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+%  IV. SYSTEM DESIGN
+% =====================================================================
+\section{System Design}
+VernaSolver runs in three steps: reading the book, searching, and
+answering. Fig.~\ref{fig:flow} shows the flow of data.
+
+% ---- Flow figure (native TikZ) ----
+\begin{figure}[!t]
+\centering
+\resizebox{0.92\columnwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=6mm,
+  font=\footnotesize,
+  step/.style={rectangle, rounded corners=2pt, draw=black, very thin,
+               minimum height=8mm, minimum width=6.4cm, align=center,
+               fill=blue!6},
+  io/.style={rectangle, rounded corners=2pt, draw=black, very thin,
+             minimum height=8mm, minimum width=6.4cm, align=center,
+             fill=green!10},
+  arr/.style={-{Stealth[length=2mm]}, thin}
+]
+\node[io]                       (a) {\textbf{Input:} Student uploads a PDF book};
+\node[step, below=of a]         (b) {\textbf{Step 1 -- Read:} split into parts, turn into numbers, save};
+\node[step, below=of b]         (c) {\textbf{Step 2 -- Search:} find best parts, re-order with 2nd model};
+\node[step, below=of c]         (d) {\textbf{Step 3 -- Answer:} AI writes reply using only those parts};
+\node[io, below=of d]           (e) {\textbf{Output:} Answer with page numbers};
+\draw[arr] (a) -- (b);
+\draw[arr] (b) -- (c);
+\draw[arr] (c) -- (d);
+\draw[arr] (d) -- (e);
+\end{tikzpicture}%
+}
+\caption{The three main steps of VernaSolver, from uploading a book to
+getting an answer with page numbers.}
+\label{fig:flow}
+\end{figure}
+
+\subsection{Reading the Book}
+When a PDF is uploaded, the system reads it page by page with the PyMuPDF
+library. Reading this way keeps a record of which text is on which page,
+so the right page can be shown later. The text is split into parts of
+about 400 words, with a 40-word overlap so an idea that crosses a boundary
+is not cut off. Each part is turned into a list of 384 numbers using a
+small model named \texttt{all-MiniLM-L6-v2}, which runs on a normal
+computer. These numbers, with the book title, author, subject, and page,
+are stored in a ChromaDB database.
+
+\subsection{Searching}
+The question is turned into numbers with the same model and matched
+against the stored parts to find the closest ones. A second model
+(\texttt{ms-marco-MiniLM-L-6-v2}) then looks at the question and each
+shortlisted part together and keeps the best ones. If a student asks a
+short follow-up like ``and its uses?'', the system uses the earlier chat
+to rewrite it into a full question before searching.
+
+\subsection{Answering}
+The chosen parts and their page numbers go to an AI model (Anthropic
+Claude, with OpenAI GPT-4o-mini as a backup). The model is told to use
+only these parts, to copy maths steps as written in the book instead of
+solving them itself, and to clearly say when the answer is not present.
+The reply appears word by word on screen using Server-Sent Events (SSE),
+and the page numbers are listed below it.
+
+% =====================================================================
+%  V. KEEPING ANSWERS TIED TO THE BOOK
+% =====================================================================
+\section{Keeping Answers Tied to the Book}
+Three steps keep the answers trustworthy. First, the instruction to the
+AI model says to use only the parts taken from the book and to say so
+when the book lacks the answer; this makes the page number a real promise.
+Second, because each part keeps its page number through the whole process,
+every answer can be traced to a page, and that page can even be shown from
+the PDF with the used text marked. Third, the search runs on the local
+computer while the AI model only writes the final answer; this keeps cost
+and waiting time low and makes sure the model reads from the book instead
+of from memory.
+
+For quizzes and flashcards, the same search step gathers related text and
+the model is asked to reply in a fixed JSON form. To stop it from writing
+a normal paragraph, its reply is started with an opening brace so it has
+to continue as JSON.
+
+% =====================================================================
+%  VI. IMPLEMENTATION
+% =====================================================================
+\section{Implementation}
+VernaSolver is written in Python. Table~\ref{tab:stack} lists the main
+tools. The server is built with FastAPI and offers web addresses for
+chat, book management, uploads, quizzes, flashcards, and login. A
+command-line tool built with Click does the same core work and is useful
+for testing. The web page uses plain HTML, CSS, and JavaScript and shows
+the answer as it streams in. Accounts are kept in SQLite, with passwords
+stored in a hashed form (PBKDF2-SHA256) and login handled with cookies.
+
+\begin{table}[!t]
+\caption{Tools Used in VernaSolver}
+\label{tab:stack}
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Part} & \textbf{Tool} \\
+\midrule
+Server framework & FastAPI (Python) \\
+Reading PDF      & PyMuPDF (fitz) \\
+Text-to-numbers  & all-MiniLM-L6-v2 (local) \\
+Re-checking      & ms-marco-MiniLM-L-6-v2 \\
+Search database  & ChromaDB \\
+Main AI model    & Anthropic Claude \\
+Backup AI model  & OpenAI GPT-4o-mini \\
+Live replies     & Server-Sent Events (SSE) \\
+Login \& accounts & SQLite + PBKDF2-SHA256 \\
+Web page         & HTML / CSS / JavaScript \\
+Command-line tool & Click \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Main Settings}
+Each part of the book is about 400 words, with a 40-word overlap and a
+30-word minimum. The search takes 12 close matches and keeps the best 5
+after re-checking. Up to 6 recent question-and-answer turns are kept for
+context. These values give good search results without sending too much
+text to the AI model at once.
+
+% =====================================================================
+%  VII. RESULTS & DISCUSSION
+% =====================================================================
+\section{Results and Discussion}
+We tested a working version with real course books, including
+\textit{Software Engineering} by Pressman and \textit{Concepts of
+Physics} by H.C. Verma. The system answered concept and definition
+questions correctly and showed the right page numbers. When a book did
+not have the answer, it said so instead of guessing. It also produced
+quizzes and flashcards on chosen topics, and replies appeared smoothly as
+they were written. We noticed two things that helped the most: telling the
+model to stay inside the book kept answers faithful to the source, and the
+re-checking step removed many weak matches before the answer was written.
+Rewriting short follow-up questions also made longer chats work much
+better.
+
+% =====================================================================
+%  VIII. CONCLUSION & FUTURE SCOPE
+% =====================================================================
+\section{Conclusion and Future Scope}
+This paper presented VernaSolver, a study tool that answers only from a
+student's chosen book and shows a page number for every answer. By keeping
+the search on a normal computer, using the AI model only to write the
+reply, and telling it to stay inside the book, the system avoids the
+made-up answers and the lack of trust seen in normal chat tools. It also
+supports Indian languages and makes quizzes and flashcards.
+
+In future work we plan to add a step that reads text from scanned books,
+use a search model that handles Hindi and Marathi better, run proper tests
+to measure answer and page-number accuracy, and add per-user limits and
+saved chat history so the tool is ready for wider use.
+
+% =====================================================================
+%  REFERENCES
+% =====================================================================
+\begin{thebibliography}{00}
+
+\bibitem{lewis2020rag}
+P. Lewis \textit{et al.}, ``Retrieval-augmented generation for
+knowledge-intensive NLP tasks,'' in \textit{Advances in Neural
+Information Processing Systems (NeurIPS)}, 2020.
+
+\bibitem{karpukhin2020dpr}
+V. Karpukhin \textit{et al.}, ``Dense passage retrieval for open-domain
+question answering,'' in \textit{Proc. EMNLP}, 2020, pp.~6769--6781.
+
+\bibitem{reimers2019sbert}
+N. Reimers and I. Gurevych, ``Sentence-BERT: Sentence embeddings using
+Siamese BERT-networks,'' in \textit{Proc. EMNLP-IJCNLP}, 2019,
+pp.~3982--3992.
+
+\bibitem{vaswani2017attention}
+A. Vaswani \textit{et al.}, ``Attention is all you need,'' in
+\textit{Advances in Neural Information Processing Systems (NeurIPS)},
+2017.
+
+\bibitem{chromadb}
+Chroma, ``ChromaDB: the open-source embedding database,''
+\url{https://www.trychroma.com}. (Accessed 2026).
+
+\end{thebibliography}
+
+\end{document}

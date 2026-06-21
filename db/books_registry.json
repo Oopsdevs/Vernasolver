@@ -1,0 +1,20 @@
+[
+  {
+    "book_id": "software_engineering__roger_pressman__software_engineering",
+    "subject": "Software Engineering",
+    "title": "Software Engineering",
+    "author": "Roger Pressman",
+    "pages": 888,
+    "chunks": 1332,
+    "pdf_path": "C:\\Stuff\\Project\\books\\software_engineering__roger_pressman__software_engineering.pdf"
+  },
+  {
+    "book_id": "physics__hc_verma__concepts_of_physics",
+    "subject": "Physics",
+    "title": "Concepts of Physics",
+    "author": "HC Verma",
+    "pages": 470,
+    "chunks": 1116,
+    "pdf_path": "C:\\Stuff\\Project\\books\\physics__hc_verma__concepts_of_physics.pdf"
+  }
+]
